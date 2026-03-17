@@ -13,6 +13,8 @@ OpenWhale fetches real-time SEC filing data (13F institutional holdings, 13D/G a
 - **Trending Dashboard** — Surfaces stocks with notable smart money activity (cached with a 6-hour TTL)
 - **Data Visualizations** — Donut charts for insider buy/sell splits, bar charts for value breakdowns, and timeline components for transaction history
 - **Autocomplete Search** — Client-side ticker search with keyboard navigation
+- **MacBook Terminal Demo** — Interactive scroll animation showcasing a Bloomberg-style terminal with institutional holdings and insider activity data
+- **Ticker Data Caching** — In-memory cache with 6-hour TTL for institutional holders and insider transactions, reducing API costs on repeat visits
 
 ## Tech Stack
 
@@ -25,7 +27,8 @@ OpenWhale fetches real-time SEC filing data (13F institutional holdings, 13D/G a
 | SEC Data | Valyu API (`@valyu/ai-sdk`) |
 | Validation | Zod 4 |
 | Markdown | remark-gfm + streamdown |
-| UI | Base UI, Lucide icons, Motion |
+| UI | Lucide icons, Motion, Aceternity MacBook Scroll |
+| Fonts | Inter, Space Grotesk, Playfair Display, JetBrains Mono |
 
 ## Project Structure
 
@@ -33,11 +36,12 @@ OpenWhale fetches real-time SEC filing data (13F institutional holdings, 13D/G a
 src/
 ├── app/
 │   ├── api/
-│   │   ├── ticker-data/route.ts   # Fetch institutional holders + insider transactions
+│   │   ├── ticker-data/route.ts   # Fetch institutional holders + insider transactions (cached 6h)
 │   │   ├── narrative/route.ts     # Stream AI-generated analysis
+│   │   ├── chat/route.ts          # Deep dive chat endpoint
 │   │   └── trending/route.ts      # Trending tickers (NDJSON, cached)
 │   ├── ticker/[symbol]/page.tsx   # Ticker detail page
-│   ├── page.tsx                   # Home (hero + trending grid)
+│   ├── page.tsx                   # Home (hero + MacBook demo + trending grid)
 │   └── layout.tsx                 # Root layout with nav + footer
 ├── components/
 │   ├── search-bar.tsx             # Ticker autocomplete
@@ -46,6 +50,12 @@ src/
 │   ├── buy-sell-chart.tsx         # Insider buy/sell donut + bar chart
 │   ├── insider-timeline.tsx       # Form 4 transaction timeline
 │   ├── narrative-stream.tsx       # Streaming markdown narrative
+│   ├── macbook-demo.tsx           # MacBook scroll showcase
+│   ├── terminal-screen.tsx        # Bloomberg-style terminal UI
+│   ├── rotating-words.tsx         # Animated rotating headline words
+│   ├── nav-bar.tsx                # Transparent (home) / solid (ticker) navbar
+│   ├── footer.tsx                 # Site footer
+│   ├── logo.tsx                   # OpenWhale whale tail icon
 │   └── ui/                        # Reusable UI primitives
 ├── hooks/
 │   ├── use-ticker-data.ts         # Fetch ticker data
@@ -66,9 +76,10 @@ src/
 ### Ticker Detail Page
 
 1. User searches for a ticker (e.g. AAPL) via the autocomplete search bar
-2. `/api/ticker-data` uses OpenAI with the Valyu `secSearch` tool to extract structured data — top 10 institutional holders, up to 15 insider transactions, buy/sell counts and totals
-3. The UI renders holdings tables, buy/sell charts, and an insider timeline
-4. `/api/narrative` streams an AI-written analysis as markdown, citing filing dates for every claim
+2. `/api/ticker-data` checks the in-memory cache first — if a fresh result exists (< 6 hours old), it returns instantly with no API calls
+3. On cache miss, it uses OpenAI with the Valyu `secSearch` tool to extract structured data — top 10 institutional holders, up to 15 insider transactions, buy/sell counts and totals
+4. The UI renders holdings tables, buy/sell charts, and an insider timeline
+5. `/api/narrative` streams an AI-written analysis as markdown, citing filing dates for every claim (not cached — always fresh)
 
 ### Trending Page
 
