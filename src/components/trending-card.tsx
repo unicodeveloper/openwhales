@@ -48,7 +48,7 @@ export function TrendingCard({ data }: TrendingCardProps) {
               Top Holders
             </span>
             {data.topHolders.slice(0, 3).map((holder, i) => (
-              <div key={holder.name} className="flex items-center justify-between gap-2">
+              <div key={`${holder.name}-${i}`} className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-[10px] font-mono text-muted-foreground/60 w-3 shrink-0">
                     {i + 1}

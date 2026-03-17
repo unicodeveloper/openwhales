@@ -20,82 +20,147 @@ export function HoldingsTable({ holders }: HoldingsTableProps) {
   const maxValue = Math.max(...holders.map((h) => h.value));
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-border/60 text-xs uppercase tracking-wider text-muted-foreground">
-            <th className="text-left py-3 pr-4 font-medium">#</th>
-            <th className="text-left py-3 pr-4 font-medium">Fund / Manager</th>
-            <th className="text-right py-3 pr-4 font-medium">Shares</th>
-            <th className="text-right py-3 pr-4 font-medium">Value</th>
-            <th className="text-left py-3 pr-4 font-medium">Activity</th>
-            <th className="text-right py-3 font-medium">Change</th>
-          </tr>
-        </thead>
-        <tbody>
-          {holders.map((holder, i) => {
-            const cfg = activityConfig[holder.activity] || activityConfig.unchanged;
-            const barWidth = maxValue > 0 ? (holder.value / maxValue) * 100 : 0;
+    <>
+      {/* Mobile card layout */}
+      <div className="sm:hidden space-y-3">
+        {holders.map((holder, i) => {
+          const cfg = activityConfig[holder.activity] || activityConfig.unchanged;
+          const barWidth = maxValue > 0 ? (holder.value / maxValue) * 100 : 0;
 
-            return (
-              <tr
-                key={`${holder.name}-${i}`}
-                className="border-b border-border/30 hover:bg-muted/30 transition-colors group"
-              >
-                <td className="py-3 pr-4 text-muted-foreground font-mono text-xs">
-                  {i + 1}
-                </td>
-                <td className="py-3 pr-4 min-w-[180px]">
-                  <div className="font-medium leading-snug">
-                    {holder.name}
+          return (
+            <div
+              key={`${holder.name}-${i}`}
+              className="rounded-lg border border-border/30 p-3 space-y-2"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground font-mono">{i + 1}</span>
+                    <span className="font-medium text-sm truncate">{holder.name}</span>
                   </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    {holder.reportDate}
-                  </div>
-                </td>
-                <td className="py-3 pr-4 text-right font-mono">
-                  {formatShares(holder.shares)}
-                </td>
-                <td className="py-3 pr-4 text-right">
-                  <div className="font-mono font-medium">{formatValue(holder.value)}</div>
-                  <div className="mt-1 h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-500"
-                      style={{ width: `${barWidth}%` }}
-                    />
-                  </div>
-                </td>
-                <td className="py-3 pr-4">
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.color} bg-opacity-10`}
-                    style={{
-                      backgroundColor: `color-mix(in srgb, currentColor 10%, transparent)`,
-                    }}
-                  >
-                    <span className="text-[10px]">{cfg.icon}</span>
-                    {cfg.label}
-                  </span>
-                </td>
-                <td className="py-3 text-right">
-                  <span
-                    className={`font-mono text-xs font-medium ${
-                      (holder.changePercent ?? 0) > 0
-                        ? "text-emerald-500"
-                        : (holder.changePercent ?? 0) < 0
-                        ? "text-red-500"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    {(holder.changePercent ?? 0) > 0 ? "+" : ""}
-                    {(holder.changePercent ?? 0).toFixed(2)}%
-                  </span>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                  <span className="text-[10px] text-muted-foreground">{holder.reportDate}</span>
+                </div>
+                <span
+                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${cfg.color}`}
+                  style={{
+                    backgroundColor: `color-mix(in srgb, currentColor 10%, transparent)`,
+                  }}
+                >
+                  <span className="text-[9px]">{cfg.icon}</span>
+                  {cfg.label}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-3 text-xs">
+                <div>
+                  <span className="text-muted-foreground">Shares: </span>
+                  <span className="font-mono">{formatShares(holder.shares)}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Value: </span>
+                  <span className="font-mono font-medium">{formatValue(holder.value)}</span>
+                </div>
+                <span
+                  className={`font-mono text-xs font-medium ${
+                    (holder.changePercent ?? 0) > 0
+                      ? "text-emerald-500"
+                      : (holder.changePercent ?? 0) < 0
+                      ? "text-red-500"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {(holder.changePercent ?? 0) > 0 ? "+" : ""}
+                  {(holder.changePercent ?? 0).toFixed(2)}%
+                </span>
+              </div>
+              <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-500"
+                  style={{ width: `${barWidth}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop table layout */}
+      <div className="hidden sm:block overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border/60 text-xs uppercase tracking-wider text-muted-foreground">
+              <th className="text-left py-3 pr-4 font-medium">#</th>
+              <th className="text-left py-3 pr-4 font-medium">Fund / Manager</th>
+              <th className="text-right py-3 pr-4 font-medium">Shares</th>
+              <th className="text-right py-3 pr-4 font-medium">Value</th>
+              <th className="text-left py-3 pr-4 font-medium">Activity</th>
+              <th className="text-right py-3 font-medium">Change</th>
+            </tr>
+          </thead>
+          <tbody>
+            {holders.map((holder, i) => {
+              const cfg = activityConfig[holder.activity] || activityConfig.unchanged;
+              const barWidth = maxValue > 0 ? (holder.value / maxValue) * 100 : 0;
+
+              return (
+                <tr
+                  key={`${holder.name}-${i}`}
+                  className="border-b border-border/30 hover:bg-muted/30 transition-colors group"
+                >
+                  <td className="py-3 pr-4 text-muted-foreground font-mono text-xs">
+                    {i + 1}
+                  </td>
+                  <td className="py-3 pr-4 min-w-[180px]">
+                    <div className="font-medium leading-snug">
+                      {holder.name}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {holder.reportDate}
+                    </div>
+                  </td>
+                  <td className="py-3 pr-4 text-right font-mono">
+                    {formatShares(holder.shares)}
+                  </td>
+                  <td className="py-3 pr-4 text-right">
+                    <div className="font-mono font-medium">{formatValue(holder.value)}</div>
+                    <div className="mt-1 h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-500"
+                        style={{ width: `${barWidth}%` }}
+                      />
+                    </div>
+                  </td>
+                  <td className="py-3 pr-4">
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.color} bg-opacity-10`}
+                      style={{
+                        backgroundColor: `color-mix(in srgb, currentColor 10%, transparent)`,
+                      }}
+                    >
+                      <span className="text-[10px]">{cfg.icon}</span>
+                      {cfg.label}
+                    </span>
+                  </td>
+                  <td className="py-3 text-right">
+                    <span
+                      className={`font-mono text-xs font-medium ${
+                        (holder.changePercent ?? 0) > 0
+                          ? "text-emerald-500"
+                          : (holder.changePercent ?? 0) < 0
+                          ? "text-red-500"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {(holder.changePercent ?? 0) > 0 ? "+" : ""}
+                      {(holder.changePercent ?? 0).toFixed(2)}%
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 

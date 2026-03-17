@@ -34,38 +34,38 @@ export default function TickerPage({
     <div className="min-h-screen">
       {/* Ticker header strip */}
       <div className="border-b border-border/40">
-        <div className="container mx-auto px-4 py-6 max-w-7xl">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="container mx-auto px-4 py-4 sm:py-6 max-w-7xl">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
               <Link
                 href="/"
-                className="p-2 -ml-2 rounded-lg hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+                className="p-2 -ml-2 rounded-lg hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground shrink-0"
               >
                 <ArrowLeft className="h-4 w-4" />
               </Link>
-              <div>
-                <h1 className="text-3xl sm:text-4xl font-black tracking-tight font-mono">
+              <div className="min-w-0">
+                <h1 className="text-2xl sm:text-4xl font-black tracking-tight font-mono truncate">
                   ${upperSymbol}
                 </h1>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {isDataLoading && (
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-border/40 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md border border-border/40 text-[10px] sm:text-xs text-muted-foreground">
                   <span className="relative flex h-1.5 w-1.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75" />
                     <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
                   </span>
-                  Fetching data
+                  <span className="hidden xs:inline">Fetching data</span>
                 </span>
               )}
               {isStreaming && (
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/5 text-xs text-emerald-400 font-medium">
+                <span className="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/5 text-[10px] sm:text-xs text-emerald-400 font-medium">
                   <span className="relative flex h-1.5 w-1.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75" />
                     <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
                   </span>
-                  AI Analyzing
+                  <span className="hidden sm:inline">AI Analyzing</span>
                 </span>
               )}
               {/* Header CTA for chat */}
@@ -91,9 +91,9 @@ export default function TickerPage({
       )}
 
       {/* Main content */}
-      <div className="container mx-auto px-4 max-w-7xl py-8">
+      <div className="container mx-auto px-3 sm:px-4 max-w-7xl py-4 sm:py-8">
         {/* Top row: Holdings table (full width) */}
-        <section className="mb-8">
+        <section className="mb-6 sm:mb-8">
           <SectionHeader
             badge="13F"
             badgeColor="bg-emerald-500"
@@ -101,7 +101,7 @@ export default function TickerPage({
             subtitle="Largest institutional positions from recent 13F filings"
           />
           <div className="rounded-xl border border-border/40 overflow-hidden">
-            <div className="p-5">
+            <div className="p-3 sm:p-5">
               {isDataLoading ? (
                 <div className="space-y-3">
                   {Array.from({ length: 5 }).map((_, i) => (
@@ -118,7 +118,7 @@ export default function TickerPage({
         </section>
 
         {/* Middle row: Buy/Sell + Insider Activity side by side */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
           <section>
             <SectionHeader
               badge="B/S"
@@ -126,7 +126,7 @@ export default function TickerPage({
               title="Insider Buy vs. Sell"
               subtitle="Transaction breakdown by count and value"
             />
-            <div className="rounded-xl border border-border/40 p-5 h-[calc(100%-3rem)]">
+            <div className="rounded-xl border border-border/40 p-3 sm:p-5 h-[calc(100%-3rem)]">
               {isDataLoading ? (
                 <div className="space-y-4 pt-4">
                   <Skeleton className="h-40 w-40 rounded-full mx-auto" />
@@ -153,7 +153,7 @@ export default function TickerPage({
               title="Insider Activity"
               subtitle="Recent Form 4 insider transactions"
             />
-            <div className="rounded-xl border border-border/40 p-5 max-h-[500px] overflow-y-auto h-[calc(100%-3rem)]">
+            <div className="rounded-xl border border-border/40 p-3 sm:p-5 max-h-[400px] sm:max-h-[500px] overflow-y-auto h-[calc(100%-3rem)]">
               {isDataLoading ? (
                 <div className="space-y-4">
                   {Array.from({ length: 5 }).map((_, i) => (
@@ -203,7 +203,7 @@ export default function TickerPage({
           <div className="rounded-xl border border-border/40 overflow-hidden">
             <div className="flex flex-col lg:flex-row">
               {/* Narrative body */}
-              <div className="flex-1 min-w-0 p-6 sm:p-8">
+              <div className="flex-1 min-w-0 p-4 sm:p-6 md:p-8">
                 {!error && !content && isStreaming && (
                   <div className="space-y-4">
                     <Skeleton className="h-5 w-2/3" />
@@ -417,19 +417,19 @@ function SectionHeader({
   trailing?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start justify-between mb-3">
-      <div className="flex items-center gap-3">
+    <div className="flex items-start justify-between mb-3 gap-2">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         <span
-          className={`inline-flex items-center justify-center w-7 h-7 rounded-md ${badgeColor} text-white text-[11px] font-bold`}
+          className={`inline-flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-md ${badgeColor} text-white text-[10px] sm:text-[11px] font-bold shrink-0`}
         >
           {badge}
         </span>
-        <div>
-          <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-          <p className="text-[11px] text-muted-foreground">{subtitle}</p>
+        <div className="min-w-0">
+          <h2 className="text-sm sm:text-base font-semibold tracking-tight truncate">{title}</h2>
+          <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate">{subtitle}</p>
         </div>
       </div>
-      {trailing}
+      <div className="shrink-0">{trailing}</div>
     </div>
   );
 }

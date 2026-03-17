@@ -28,14 +28,14 @@ export function BuySellChart({
   const sellArc = circumference - buyArc;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
       {/* Donut Chart — Transaction Count */}
       <div className="flex flex-col items-center">
-        <h4 className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-4">
+        <h4 className="text-[10px] sm:text-xs uppercase tracking-wider text-muted-foreground font-medium mb-3 sm:mb-4">
           Insider Transactions
         </h4>
         <div className="relative">
-          <svg width="160" height="160" viewBox="0 0 160 160">
+          <svg className="w-[120px] h-[120px] sm:w-[160px] sm:h-[160px]" viewBox="0 0 160 160">
             <circle
               cx="80"
               cy="80"
@@ -97,7 +97,7 @@ export function BuySellChart({
 
       {/* Horizontal Bar — Value Split */}
       <div className="flex flex-col justify-center">
-        <h4 className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-4">
+        <h4 className="text-[10px] sm:text-xs uppercase tracking-wider text-muted-foreground font-medium mb-3 sm:mb-4">
           Transaction Value
         </h4>
 

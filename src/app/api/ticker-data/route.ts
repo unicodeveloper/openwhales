@@ -4,6 +4,7 @@ import { openai } from "@ai-sdk/openai";
 import { secSearch } from "@valyu/ai-sdk";
 import { z } from "zod";
 import { NarrativeRequestSchema } from "@/lib/schemas";
+import { getCached, setCache } from "@/lib/redis";
 import type { TickerData } from "@/types";
 
 const HolderSchema = z.object({
@@ -45,27 +46,7 @@ const TickerDataSchema = z.object({
 
 type TickerDataOutput = z.infer<typeof TickerDataSchema>;
 
-/**
- * In-memory cache for ticker data.
- * 13F filings are quarterly, Form 4s trickle daily — 6h TTL is plenty fresh.
- */
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
-
-const cache = new Map<string, { data: TickerData; timestamp: number }>();
-
-function getCached(symbol: string): TickerData | null {
-  const entry = cache.get(symbol);
-  if (!entry) return null;
-  if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
-    cache.delete(symbol);
-    return null;
-  }
-  return entry.data;
-}
-
-function setCache(symbol: string, data: TickerData) {
-  cache.set(symbol, { data, timestamp: Date.now() });
-}
+const CACHE_TTL_SECONDS = 6 * 60 * 60; // 6 hours
 
 export async function POST(request: NextRequest) {
   try {
@@ -79,7 +60,7 @@ export async function POST(request: NextRequest) {
     const { symbol } = parsed.data;
 
     // Return cached data if fresh
-    const cached = getCached(symbol);
+    const cached = await getCached<TickerData>(`ticker:${symbol}`);
     if (cached) {
       return NextResponse.json(cached, {
         headers: { "X-Cache": "HIT" },
@@ -163,7 +144,7 @@ Key rules:
     };
 
     // Cache for subsequent requests
-    setCache(symbol, data);
+    await setCache(`ticker:${symbol}`, data, CACHE_TTL_SECONDS);
 
     return NextResponse.json(data, {
       headers: { "X-Cache": "MISS" },

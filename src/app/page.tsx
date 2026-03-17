@@ -35,7 +35,7 @@ export default function Home() {
 
             {/* Headline with rotating keyword */}
             <h1
-              className="text-5xl sm:text-6xl lg:text-8xl font-bold tracking-[-0.03em] leading-[0.95] animate-fade-up text-white/80"
+              className="text-4xl sm:text-6xl lg:text-8xl font-bold tracking-[-0.03em] leading-[0.95] animate-fade-up text-white/80"
               style={{ fontFamily: "var(--font-space-grotesk), sans-serif" }}
             >
               Follow the
@@ -44,22 +44,22 @@ export default function Home() {
             </h1>
 
             {/* Subhead */}
-            <p className="mt-6 text-base sm:text-lg text-white/60 max-w-lg leading-relaxed animate-fade-up-delay-1">
+            <p className="mt-4 sm:mt-6 text-sm sm:text-lg text-white/60 max-w-lg leading-relaxed animate-fade-up-delay-1 px-2 sm:px-0">
               Institutional holdings, activist positions, and insider
               transactions analyzed by AI from public SEC filings
             </p>
 
             {/* Search */}
-            <div className="mt-10 w-full max-w-xl animate-fade-up-delay-2 relative z-20">
+            <div className="mt-8 sm:mt-10 w-full max-w-xl animate-fade-up-delay-2 relative z-20 px-2 sm:px-0">
               <SearchBar size="large" />
             </div>
 
             {/* Filing types */}
-            <div className="mt-10 flex items-center gap-6 sm:gap-10 animate-fade-up-delay-3">
+            <div className="mt-8 sm:mt-10 flex items-center gap-4 sm:gap-10 animate-fade-up-delay-3">
               <FilingPill label="13F" desc="Institutional" />
-              <span className="w-px h-8 bg-white/15" />
+              <span className="w-px h-6 sm:h-8 bg-white/15" />
               <FilingPill label="13D/G" desc="Activist" />
-              <span className="w-px h-8 bg-white/15" />
+              <span className="w-px h-6 sm:h-8 bg-white/15" />
               <FilingPill label="Form 4" desc="Insider" />
             </div>
           </div>

@@ -116,8 +116,8 @@ export function TickerChat({ symbol, tickerData, isOpen, onClose }: TickerChatPr
         onClick={onClose}
       />
 
-      {/* Floating panel */}
-      <div className="chat-panel-enter fixed z-50 bottom-4 right-4 w-[calc(100vw-2rem)] sm:w-[420px] h-[min(600px,calc(100vh-6rem))] flex flex-col rounded-xl border border-border/60 bg-background/95 backdrop-blur-xl overflow-hidden shadow-2xl shadow-black/40">
+      {/* Floating panel — full screen on small phones, floating on larger devices */}
+      <div className="chat-panel-enter fixed z-50 bottom-0 right-0 w-full h-[calc(100vh-3.5rem)] sm:bottom-4 sm:right-4 sm:w-[420px] sm:h-[min(600px,calc(100vh-6rem))] sm:rounded-xl flex flex-col rounded-t-xl sm:rounded-xl border border-border/60 bg-background/95 backdrop-blur-xl overflow-hidden shadow-2xl shadow-black/40">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-muted/30 shrink-0">
           <div className="flex items-center gap-2.5">

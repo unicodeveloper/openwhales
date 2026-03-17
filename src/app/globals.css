@@ -170,6 +170,13 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), monospace;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Prevent horizontal overflow on mobile */
+html {
+  overflow-x: hidden;
 }
 
 /* ── Clean black background — no gradients ── */
@@ -231,16 +238,31 @@ body {
   color: var(--foreground);
 }
 
+/* Wrap tables in a scrollable container on mobile */
+.narrative-content .table-wrapper,
+.narrative-content table {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .narrative-content table {
   width: 100%;
+  min-width: 400px;
   border-collapse: separate;
   border-spacing: 0;
   margin-top: 1rem;
   margin-bottom: 1rem;
   font-size: 0.8125rem;
   border-radius: 0.5rem;
-  overflow: hidden;
   border: 1px solid var(--border);
+}
+
+@media (min-width: 640px) {
+  .narrative-content table {
+    display: table;
+    min-width: unset;
+  }
 }
 
 .narrative-content th {
@@ -393,14 +415,17 @@ body {
 }
 
 .chat-response-content table {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   width: 100%;
+  min-width: 280px;
   border-collapse: separate;
   border-spacing: 0;
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
   font-size: 0.625rem;
   border-radius: 0.25rem;
-  overflow: hidden;
   border: 1px solid var(--border);
 }
 

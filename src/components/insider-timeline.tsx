@@ -29,11 +29,11 @@ export function InsiderTimeline({ transactions }: InsiderTimelineProps) {
         return (
           <div
             key={`${tx.name}-${tx.date}-${i}`}
-            className="group relative flex items-stretch gap-4 hover:bg-muted/30 transition-colors rounded-lg px-3 py-3"
+            className="group relative flex items-stretch gap-3 sm:gap-4 hover:bg-muted/30 transition-colors rounded-lg px-2 sm:px-3 py-2.5 sm:py-3"
           >
             {/* Timeline dot + line */}
-            <div className="flex flex-col items-center w-4 shrink-0">
-              <div className={`w-3 h-3 rounded-full ${cfg.dot} ring-4 ring-background z-10 shrink-0 mt-1`} />
+            <div className="flex flex-col items-center w-3 sm:w-4 shrink-0">
+              <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${cfg.dot} ring-4 ring-background z-10 shrink-0 mt-1`} />
               {i < transactions.length - 1 && (
                 <div className="w-px flex-1 bg-border/60 mt-1" />
               )}
@@ -41,14 +41,14 @@ export function InsiderTimeline({ transactions }: InsiderTimelineProps) {
 
             {/* Content */}
             <div className="flex-1 min-w-0 pb-2">
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-sm truncate">
+                    <span className="font-medium text-xs sm:text-sm truncate max-w-[160px] sm:max-w-none">
                       {tx.name}
                     </span>
                     <span
-                      className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${cfg.text}`}
+                      className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold uppercase tracking-wider ${cfg.text}`}
                       style={{
                         backgroundColor: `color-mix(in srgb, currentColor 12%, transparent)`,
                       }}
@@ -56,23 +56,23 @@ export function InsiderTimeline({ transactions }: InsiderTimelineProps) {
                       {cfg.label}
                     </span>
                   </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
+                  <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
                     {tx.title} &middot; {tx.date}
                   </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <div className={`font-mono text-sm font-semibold ${cfg.text}`}>
+                <div className="flex items-center gap-2 sm:block sm:text-right shrink-0">
+                  <div className={`font-mono text-xs sm:text-sm font-semibold ${cfg.text}`}>
                     {tx.type === "buy" ? "+" : tx.type === "sell" ? "-" : ""}
                     {formatValue(Math.abs(tx.value))}
                   </div>
-                  <div className="text-xs text-muted-foreground font-mono">
+                  <div className="text-[10px] sm:text-xs text-muted-foreground font-mono">
                     {formatShares(tx.shares)} @ ${tx.pricePerShare.toFixed(2)}
                   </div>
                 </div>
               </div>
 
               {/* Value bar */}
-              <div className="mt-2 h-1.5 w-full bg-muted rounded-full overflow-hidden">
+              <div className="mt-1.5 sm:mt-2 h-1 sm:h-1.5 w-full bg-muted rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full ${cfg.bg} opacity-60 transition-all duration-500`}
                   style={{ width: `${Math.max(barWidth, 2)}%` }}

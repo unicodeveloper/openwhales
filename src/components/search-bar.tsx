@@ -178,9 +178,10 @@ export function SearchBar({ size = "default", className = "" }: SearchBarProps) 
       <Button
         type="submit"
         size={isLarge ? "lg" : "default"}
-        className={isLarge ? "h-14 px-8 text-lg" : ""}
+        className={isLarge ? "h-14 px-4 sm:px-8 text-base sm:text-lg" : ""}
       >
-        Analyze
+        <Search className="h-4 w-4 sm:hidden" />
+        <span className="hidden sm:inline">Analyze</span>
       </Button>
       {error && (
         <p className="absolute -bottom-6 left-0 text-sm text-red-500">

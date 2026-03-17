@@ -10,8 +10,8 @@ export function Footer() {
             OpenWhales
           </span>
         </div>
-        <p className="text-[11px] text-muted-foreground whitespace-nowrap">
-          Analyzes public SEC filings (13F, 13D/G, Form 4) using AI. Not financial advice. Data may be delayed.
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          Analyzes public SEC filings (13F, 13D/G, Form 4) using AI. Powered by Valyu. Not financial advice. Data may be delayed.
         </p>
       </div>
     </footer>

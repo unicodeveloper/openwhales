@@ -14,7 +14,7 @@ OpenWhale fetches real-time SEC filing data (13F institutional holdings, 13D/G a
 - **Data Visualizations** — Donut charts for insider buy/sell splits, bar charts for value breakdowns, and timeline components for transaction history
 - **Autocomplete Search** — Client-side ticker search with keyboard navigation
 - **MacBook Terminal Demo** — Interactive scroll animation showcasing a Bloomberg-style terminal with institutional holdings and insider activity data
-- **Ticker Data Caching** — In-memory cache with 6-hour TTL for institutional holders and insider transactions, reducing API costs on repeat visits
+- **Redis Caching** — Redis-backed cache with 6-hour TTL for ticker data, with graceful fallback when Redis is unavailable
 
 ## Tech Stack
 
@@ -28,6 +28,7 @@ OpenWhale fetches real-time SEC filing data (13F institutional holdings, 13D/G a
 | Validation | Zod 4 |
 | Markdown | remark-gfm + streamdown |
 | UI | Lucide icons, Motion, Aceternity MacBook Scroll |
+| Caching | Redis (ioredis) |
 | Fonts | Inter, Space Grotesk, Playfair Display, JetBrains Mono |
 
 ## Project Structure
@@ -36,7 +37,7 @@ OpenWhale fetches real-time SEC filing data (13F institutional holdings, 13D/G a
 src/
 ├── app/
 │   ├── api/
-│   │   ├── ticker-data/route.ts   # Fetch institutional holders + insider transactions (cached 6h)
+│   │   ├── ticker-data/route.ts   # Fetch institutional holders + insider transactions (Redis-cached 6h)
 │   │   ├── narrative/route.ts     # Stream AI-generated analysis
 │   │   ├── chat/route.ts          # Deep dive chat endpoint
 │   │   └── trending/route.ts      # Trending tickers (NDJSON, cached)
@@ -55,7 +56,7 @@ src/
 │   ├── rotating-words.tsx         # Animated rotating headline words
 │   ├── nav-bar.tsx                # Transparent (home) / solid (ticker) navbar
 │   ├── footer.tsx                 # Site footer
-│   ├── logo.tsx                   # OpenWhale whale tail icon
+│   ├── logo.tsx                   # OpenWhales whale tail icon
 │   └── ui/                        # Reusable UI primitives
 ├── hooks/
 │   ├── use-ticker-data.ts         # Fetch ticker data
@@ -63,6 +64,7 @@ src/
 │   └── use-trending-data.ts       # Fetch trending with NDJSON parsing
 ├── lib/
 │   ├── valyu.ts                   # Valyu integration + AI utilities
+│   ├── redis.ts                   # Redis cache client (get/set with TTL, graceful fallback)
 │   ├── schemas.ts                 # Zod validation schemas
 │   ├── constants.ts               # App constants
 │   ├── tickers.ts                 # 177 supported ticker symbols
@@ -76,8 +78,8 @@ src/
 ### Ticker Detail Page
 
 1. User searches for a ticker (e.g. AAPL) via the autocomplete search bar
-2. `/api/ticker-data` checks the in-memory cache first — if a fresh result exists (< 6 hours old), it returns instantly with no API calls
-3. On cache miss, it uses OpenAI with the Valyu `secSearch` tool to extract structured data — top 10 institutional holders, up to 15 insider transactions, buy/sell counts and totals
+2. `/api/ticker-data` checks Redis first — if a fresh result exists (< 6 hours old), it returns instantly with no API calls
+3. On cache miss, it uses OpenAI with the Valyu `secSearch` tool to extract structured data — top 10 institutional holders, up to 15 insider transactions, buy/sell counts and totals. The result is then written to Redis for subsequent requests
 4. The UI renders holdings tables, buy/sell charts, and an insider timeline
 5. `/api/narrative` streams an AI-written analysis as markdown, citing filing dates for every claim (not cached — always fresh)
 
@@ -102,6 +104,7 @@ Create a `.env.local` file:
 OPENAI_API_KEY=sk-proj-...       # OpenAI API key
 VALYU_API_KEY=val_...            # Valyu API key for SEC filing search
 ANTHROPIC_API_KEY=sk-ant-...     # Anthropic API key
+REDIS_URL=redis://...            # Redis connection URL (optional — app works without it, caching is skipped)
 ```
 
 ### Install & Run
@@ -133,4 +136,6 @@ The app works with these core data structures:
 
 ## Deploy
 
-Deploy on [Railway](https://railway.app) — connect your GitHub repo, set the three environment variables (`OPENAI_API_KEY`, `VALYU_API_KEY`, `ANTHROPIC_API_KEY`), and Railway will auto-detect the Next.js framework and handle the rest.
+Deploy on [Railway](https://railway.app) — connect your GitHub repo, set the environment variables (`OPENAI_API_KEY`, `VALYU_API_KEY`, `ANTHROPIC_API_KEY`), and Railway will auto-detect the Next.js framework and handle the rest.
+
+For caching, add a Redis service in Railway and set `REDIS_URL` — Railway provides this automatically when you provision a Redis instance. The app works without Redis but will make fresh API calls on every request.
