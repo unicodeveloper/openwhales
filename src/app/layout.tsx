@@ -3,7 +3,7 @@ import { Inter, JetBrains_Mono, Space_Grotesk, Playfair_Display } from "next/fon
 import { NavBar } from "@/components/nav-bar";
 import { Footer } from "@/components/footer";
 import { AuthInitializer } from "@/components/auth";
-import { SITE_NAME, SITE_DESCRIPTION, SITE_URL } from "@/lib/constants";
+import { SITE_NAME, SITE_TITLE, SITE_DESCRIPTION, SITE_URL } from "@/lib/constants";
 import "./globals.css";
 
 const inter = Inter({
@@ -39,7 +39,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: SITE_NAME,
+    default: SITE_TITLE,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
