@@ -18,6 +18,7 @@ export default function Home() {
           className="object-cover object-center"
           aria-hidden="true"
         />
+        
         {/* Dark overlay for text readability */}
         <div className="absolute inset-0 bg-black/70" />
         {/* Bottom fade into pure black page bg */}
