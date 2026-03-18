@@ -61,21 +61,14 @@ export function SignInModal({ open, onOpenChange }: SignInModalProps) {
             Sign in to OpenWhales
           </h2>
           <p className="mt-2 text-[13px] text-muted-foreground leading-relaxed max-w-[280px] mx-auto">
-            AI-powered SEC filing analysis, 13F holdings, and insider signals across 170+ tickers.
+            AI-powered SEC filing analysis, 13F holdings, investor portfolio and insider signals across 170+ tickers.
           </p>
         </div>
 
         {/* Divider */}
         <div className="mx-5 sm:mx-6 h-px bg-border" />
 
-        {/* Features list */}
-        <div className="px-5 sm:px-6 py-4 sm:py-5">
-          <div className="space-y-3">
-            <Feature icon="13F" text="Institutional holdings from quarterly filings" />
-            <Feature icon="F4" text="Real-time insider buys and sells" />
-            <Feature icon="AI" text="Smart money narrative analysis" />
-          </div>
-        </div>
+       
 
         {/* Divider */}
         <div className="mx-5 sm:mx-6 h-px bg-border" />

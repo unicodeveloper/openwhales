@@ -1,10 +1,10 @@
-# OpenWhale
+# OpenWhales
 
-AI-powered financial analysis platform that tracks SEC filings to reveal what smart money — institutional investors, activist funds, and insiders — thinks about publicly traded stocks and prominent fund managers.
+AI-powered SEC filing intelligence platform. Track what smart money (institutional investors, activist funds, and corporate insiders) is doing across 177 public stocks and 130+ prominent fund managers. Search by ticker or investor name to surface 13F holdings, Form 4 insider trades, and 13D/G activist stakes, then get AI-synthesized narratives that connect the dots.
 
 ## What It Does
 
-OpenWhale fetches real-time SEC filing data (13F institutional holdings, 13D/G activist disclosures, Form 4 insider trades) via the Valyu API, then uses AI to synthesize that data into actionable narratives. Users can look up any of 177 supported tickers or search 170+ prominent investors by name to see their portfolio holdings, recent transactions, and AI-generated strategy analysis.
+OpenWhales fetches real-time SEC filing data (13F institutional holdings, 13D/G activist disclosures, Form 4 insider trades) via the [Valyu API](https://docs.valyu.network/), then uses AI to synthesize that data into actionable narratives. Users can look up any of 177 supported stock tickers or search 170+ prominent investors by name to see their portfolio holdings, recent transactions, and AI-generated strategy analysis.
 
 ### Key Features
 
@@ -28,13 +28,13 @@ OpenWhale fetches real-time SEC filing data (13F institutional holdings, 13D/G a
 | Language | TypeScript 5 |
 | Styling | Tailwind CSS 4 |
 | AI / LLM | Vercel AI SDK 6 + OpenAI (gpt-5.4) |
-| SEC Data | Valyu API (`@valyu/ai-sdk`) |
+| SEC Data | [Valyu API](https://docs.valyu.ai/) ([`@valyu/ai-sdk`](https://www.npmjs.com/package/@valyu/ai-sdk)) |
 | State | Zustand 5 |
 | Validation | Zod 4 |
 | Markdown | remark-gfm + streamdown |
 | UI | Lucide icons, Phosphor icons, Motion, Aceternity MacBook Scroll |
 | Caching | Redis (ioredis) |
-| Auth | OAuth 2.0 PKCE (Valyu mode) |
+| Auth | OAuth 2.0 PKCE ([Valyu Platform](https://platform.valyu.ai)) |
 | Fonts | Inter, Space Grotesk, Playfair Display, JetBrains Mono |
 
 ## Project Structure
@@ -133,7 +133,7 @@ src/
 
 ### Deep Dive Chat
 
-Both ticker and investor pages include a floating chat panel for multi-turn conversation. The chat endpoints use OpenAI with access to four Valyu-powered tools:
+Both ticker and investor pages include a floating chat panel for multi-turn conversation. The chat endpoints use OpenAI with access to four [Valyu-powered tools](https://docs.valyu.ai/integrations/vercel-ai-sdk):
 
 - **secSearch** — SEC filings (13F, 13D/G, Form 4, 10-K, 10-Q, 8-K)
 - **financeSearch** — Stock data, earnings, balance sheets, cash flows, dividends
@@ -144,9 +144,9 @@ Both ticker and investor pages include a floating chat panel for multi-turn conv
 
 The app supports two deployment modes controlled by the `NEXT_PUBLIC_APP_MODE` environment variable:
 
-**Self-Hosted Mode** (`self-hosted`) — Uses a shared server-side `VALYU_API_KEY`. No user authentication required. All requests share the same API quota.
+**Self-Hosted Mode** (`self-hosted`) — Uses a shared server-side `VALYU_API_KEY`. No user authentication required. All requests share the same API quota. Get an API key at [platform.valyu.ai](https://platform.valyu.ai).
 
-**Valyu Mode** (`valyu`) — Each user authenticates via OAuth 2.0 PKCE with the Valyu platform. API calls are routed through an OAuth proxy, billing individual user credits. Protected pages show a sign-in overlay via the `AuthGate` component. Tokens auto-refresh with a 30-second buffer before expiry.
+**Valyu Mode** (`valyu`) — Each user authenticates via OAuth 2.0 PKCE with the [Valyu platform](https://platform.valyu.ai). API calls are routed through an OAuth proxy, billing individual user credits. Protected pages show a sign-in overlay via the `AuthGate` component. Tokens auto-refresh with a 30-second buffer before expiry.
 
 ## Getting Started
 
@@ -155,39 +155,61 @@ The app supports two deployment modes controlled by the `NEXT_PUBLIC_APP_MODE` e
 - Node.js 18+
 - npm
 
-### Environment Variables
+### Option A: Self-Hosted Mode
 
-Create a `.env.local` file:
+Best for personal use or internal teams. You provide your own API keys and all users share a single Valyu quota. No sign-in required.
+
+1. Get a Valyu API key at [platform.valyu.ai](https://platform.valyu.ai)
+2. Create a `.env.local` file:
 
 ```bash
-# Required
-OPENAI_API_KEY=sk-proj-...       # OpenAI API key
-
-# Self-Hosted Mode
-VALYU_API_KEY=val_...            # Valyu API key for SEC filing search
-NEXT_PUBLIC_APP_MODE=self-hosted # App mode
-
-# Valyu Mode (OAuth — alternative to self-hosted)
-NEXT_PUBLIC_APP_MODE=valyu
-NEXT_PUBLIC_VALYU_CLIENT_ID=...
-NEXT_PUBLIC_VALYU_AUTH_URL=...
-NEXT_PUBLIC_REDIRECT_URI=http://localhost:3000/auth/valyu/callback
-VALYU_CLIENT_SECRET=...
-VALYU_APP_URL=https://platform.valyu.ai
+OPENAI_API_KEY=sk-proj-...           # OpenAI API key
+VALYU_API_KEY=val_...                # Valyu API key
+NEXT_PUBLIC_APP_MODE=self-hosted
 
 # Optional
-REDIS_URL=redis://...            # Redis connection URL (app works without it, caching is skipped)
-ANTHROPIC_API_KEY=sk-ant-...     # Anthropic API key
+REDIS_URL=redis://localhost:6379     # Enables 6h caching (app works without it)
 ```
 
-### Install & Run
+3. Install and run:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000). No login needed, start searching immediately.
+
+### Option B: Valyu Mode (Multi-User with OAuth)
+
+Best for public deployments where each user signs in with their own [Valyu](https://platform.valyu.ai) account and uses their own credits.
+
+1. Register an OAuth application on the [Valyu platform](https://platform.valyu.ai) to get your client ID and secret
+2. Create a `.env.local` file:
+
+```bash
+OPENAI_API_KEY=sk-proj-...           # OpenAI API key
+NEXT_PUBLIC_APP_MODE=valyu
+
+# OAuth credentials (from Valyu platform)
+NEXT_PUBLIC_VALYU_CLIENT_ID=...      # OAuth client ID
+VALYU_CLIENT_SECRET=...              # OAuth client secret
+NEXT_PUBLIC_VALYU_AUTH_URL=https://auth.valyu.ai
+VALYU_APP_URL=https://platform.valyu.ai
+NEXT_PUBLIC_REDIRECT_URI=http://localhost:3000/auth/valyu/callback
+
+# Optional
+REDIS_URL=redis://localhost:6379     # Enables 6h caching (app works without it)
+```
+
+3. Install and run:
+
+```bash
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). Users will see a sign-in prompt before accessing ticker or investor pages.
 
 ### Scripts
 
@@ -216,4 +238,4 @@ Deploy on [Railway](https://railway.app) — connect your GitHub repo, set the e
 
 For caching, add a Redis service in Railway and set `REDIS_URL` — Railway provides this automatically when you provision a Redis instance. The app works without Redis but will make fresh API calls on every request.
 
-For Valyu mode, set the OAuth environment variables and ensure the redirect URI matches your deployed domain (`https://yourdomain.com/auth/valyu/callback`).
+For Valyu mode, set the OAuth environment variables and ensure the redirect URI matches your deployed domain (`https://yourdomain.com/auth/valyu/callback`). See the [Valyu docs](https://docs.valyu.network/) for full API reference.

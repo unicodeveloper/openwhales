@@ -29,7 +29,7 @@ export default function Home() {
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.04] backdrop-blur-md mb-8 animate-fade-in">
               <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
               <span className="text-[11px] font-medium tracking-wide text-white/50">
-                Tracking SEC filings in real-time. Powered by Valyu
+                Tracking SEC filings in real-time. Powered by <a href="https://docs.valyu.ai/sources/sec-filings#sec-filings-api-for-ai-agents-search-3m-regulatory-documents" target="_blank" rel="noopener noreferrer" className="underline hover:text-white/70 transition-colors">Valyu</a>
               </span>
             </div>
 
