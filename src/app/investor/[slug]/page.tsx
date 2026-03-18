@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, use, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, User } from "lucide-react";
 import {
   BuildingOfficeIcon,
   ScalesIcon,
@@ -9,29 +9,31 @@ import {
   BrainIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
-import { useNarrativeStream } from "@/hooks/use-narrative-stream";
-import { useTickerData } from "@/hooks/use-ticker-data";
+import { useInvestorData } from "@/hooks/use-investor-data";
+import { useInvestorNarrativeStream } from "@/hooks/use-investor-narrative-stream";
 import { NarrativeStream } from "@/components/narrative-stream";
-import { HoldingsTable } from "@/components/holdings-table";
+import { InvestorPortfolioTable } from "@/components/investor-portfolio-table";
+import { InvestorTransactions } from "@/components/investor-transactions";
 import { BuySellChart } from "@/components/buy-sell-chart";
-import { InsiderTimeline } from "@/components/insider-timeline";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TickerChat, ChatCTA } from "@/components/ticker-chat";
+import { InvestorChat, InvestorChatCTA } from "@/components/investor-chat";
 import { AuthGate } from "@/components/auth/auth-gate";
-export default function TickerPage({
+
+export default function InvestorPage({
   params,
 }: {
-  params: Promise<{ symbol: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { symbol } = use(params);
-  const upperSymbol = symbol.toUpperCase();
-  const { data, isLoading: isDataLoading } = useTickerData(upperSymbol);
+  const { slug } = use(params);
+  const { data, isLoading: isDataLoading } = useInvestorData(slug);
   const { content, isStreaming, error, startStream } =
-    useNarrativeStream(upperSymbol);
+    useInvestorNarrativeStream(slug);
+  const [, setReady] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
     if (data) {
+      setReady(true);
       startStream(data);
     }
   }, [data, startStream]);
@@ -39,7 +41,7 @@ export default function TickerPage({
   return (
     <AuthGate>
     <div className="min-h-screen">
-      {/* Ticker header strip */}
+      {/* Header strip */}
       <div className="border-b border-border/40">
         <div className="container mx-auto px-4 py-4 sm:py-6 max-w-7xl">
           <div className="flex items-center justify-between gap-2">
@@ -51,9 +53,32 @@ export default function TickerPage({
                 <ArrowLeft className="h-4 w-4" />
               </Link>
               <div className="min-w-0">
-                <h1 className="text-2xl sm:text-4xl font-black tracking-tight font-mono truncate">
-                  ${upperSymbol}
-                </h1>
+                {isDataLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-8 w-48" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                ) : data ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                        <User className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" />
+                      </div>
+                      <div>
+                        <h1 className="text-xl sm:text-3xl font-black tracking-tight truncate">
+                          {data.name}
+                        </h1>
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                          {data.title} &middot; {data.fund}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <h1 className="text-2xl sm:text-4xl font-black tracking-tight font-mono truncate">
+                    {slug.replace(/-/g, " ")}
+                  </h1>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
@@ -75,8 +100,7 @@ export default function TickerPage({
                   <span className="hidden sm:inline">AI Analyzing</span>
                 </span>
               )}
-              {/* Header CTA for chat */}
-              <ChatCTA onClick={() => setChatOpen(true)} variant="header" />
+              <InvestorChatCTA onClick={() => setChatOpen(true)} variant="header" />
             </div>
           </div>
         </div>
@@ -99,13 +123,13 @@ export default function TickerPage({
 
       {/* Main content */}
       <div className="container mx-auto px-3 sm:px-4 max-w-7xl py-4 sm:py-8">
-        {/* Top row: Holdings table (full width) */}
+        {/* Portfolio positions (full width) */}
         <section className="mb-6 sm:mb-8">
           <SectionHeader
             icon={<BuildingOfficeIcon weight="duotone" className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-white" />}
-            iconColor="bg-emerald-500"
-            title="Top Institutional Holders"
-            subtitle="Largest institutional positions from recent 13F filings"
+            iconColor="bg-amber-500"
+            title="Portfolio Positions"
+            subtitle="Holdings from recent 13F filings, sorted by value"
           />
           <div className="rounded-xl border border-border/40 overflow-hidden">
             <div className="p-3 sm:p-5">
@@ -115,22 +139,22 @@ export default function TickerPage({
                     <Skeleton key={i} className="h-12 w-full" />
                   ))}
                 </div>
-              ) : data?.holders && data.holders.length > 0 ? (
-                <HoldingsTable holders={data.holders} />
+              ) : data?.positions && data.positions.length > 0 ? (
+                <InvestorPortfolioTable positions={data.positions} />
               ) : (
-                <EmptyState text="No institutional holdings data available" />
+                <EmptyState text="No portfolio positions data available" />
               )}
             </div>
           </div>
         </section>
 
-        {/* Middle row: Buy/Sell + Insider Activity side by side */}
+        {/* Middle row: Buy/Sell + Transactions side by side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
           <section>
             <SectionHeader
               icon={<ScalesIcon weight="duotone" className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-white" />}
-              iconColor="bg-amber-500"
-              title="Insider Buy vs. Sell"
+              iconColor="bg-emerald-500"
+              title="Buy vs. Sell Activity"
               subtitle="Transaction breakdown by count and value"
             />
             <div className="rounded-xl border border-border/40 p-3 sm:p-5 h-[calc(100%-3rem)]">
@@ -148,7 +172,7 @@ export default function TickerPage({
                   totalSellValue={data.totalSellValue}
                 />
               ) : (
-                <EmptyState text="No insider activity data available" />
+                <EmptyState text="No transaction data available" />
               )}
             </div>
           </section>
@@ -157,8 +181,8 @@ export default function TickerPage({
             <SectionHeader
               icon={<ScrollIcon weight="duotone" className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-white" />}
               iconColor="bg-violet-500"
-              title="Insider Activity"
-              subtitle="Recent Form 4 insider transactions"
+              title="Recent Transactions"
+              subtitle="Insider trades and portfolio changes"
             />
             <div className="rounded-xl border border-border/40 p-3 sm:p-5 max-h-[400px] sm:max-h-[500px] overflow-y-auto h-[calc(100%-3rem)]">
               {isDataLoading ? (
@@ -174,23 +198,22 @@ export default function TickerPage({
                     </div>
                   ))}
                 </div>
-              ) : data?.insiderTransactions &&
-                data.insiderTransactions.length > 0 ? (
-                <InsiderTimeline transactions={data.insiderTransactions} />
+              ) : data?.transactions && data.transactions.length > 0 ? (
+                <InvestorTransactions transactions={data.transactions} />
               ) : (
-                <EmptyState text="No insider transactions found" />
+                <EmptyState text="No recent transactions found" />
               )}
             </div>
           </section>
         </div>
 
-        {/* Bottom: AI Narrative with sidebar */}
+        {/* AI Narrative */}
         <section>
           <SectionHeader
             icon={<BrainIcon weight="duotone" className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-white" />}
             iconColor="bg-blue-500"
-            title="Smart Money Narrative"
-            subtitle="AI-synthesized analysis from 13F, 13D/G & Form 4 filings"
+            title="Investment Strategy Narrative"
+            subtitle="AI-synthesized analysis of this investor's SEC filing activity"
             trailing={
               <div className="flex items-center gap-2">
                 {isStreaming && (
@@ -202,8 +225,7 @@ export default function TickerPage({
                     Streaming
                   </span>
                 )}
-                {/* Narrative section CTA for chat */}
-                <ChatCTA onClick={() => setChatOpen(true)} />
+                <InvestorChatCTA onClick={() => setChatOpen(true)} />
               </div>
             }
           />
@@ -246,15 +268,25 @@ export default function TickerPage({
                           Quick Snapshot
                         </p>
                         <div className="space-y-2.5">
-                          <StatRow label="Institutions tracked" value={String(data.holders.length)} />
-                          <StatRow label="Insider transactions" value={String(data.insiderTransactions.length)} />
                           <StatRow
-                            label="Insider buys"
+                            label="Portfolio value"
+                            value={formatSidebarValue(data.totalPortfolioValue)}
+                          />
+                          <StatRow
+                            label="Positions held"
+                            value={String(data.totalPositions)}
+                          />
+                          <StatRow
+                            label="Transactions"
+                            value={String(data.transactions.length)}
+                          />
+                          <StatRow
+                            label="Buys"
                             value={String(data.buyCount)}
                             valueColor="text-emerald-500"
                           />
                           <StatRow
-                            label="Insider sells"
+                            label="Sells"
                             value={String(data.sellCount)}
                             valueColor="text-red-500"
                           />
@@ -266,7 +298,7 @@ export default function TickerPage({
                       {/* Net flow */}
                       <div>
                         <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold mb-2">
-                          Net Insider Flow
+                          Net Transaction Flow
                         </p>
                         <div
                           className={`text-xl font-bold font-mono ${
@@ -317,9 +349,8 @@ export default function TickerPage({
                         </div>
                       </div>
 
-                      {/* Biggest moves */}
-                      {data.holders.filter((h) => h.changePercent !== 0).length >
-                        0 && (
+                      {/* Top movers */}
+                      {data.positions.filter((p) => p.changePercent !== 0).length > 0 && (
                         <>
                           <div className="h-px bg-border/40" />
                           <div>
@@ -327,31 +358,31 @@ export default function TickerPage({
                               Biggest Moves
                             </p>
                             <div className="space-y-2">
-                              {data.holders
-                                .filter((h) => h.changePercent !== 0)
+                              {data.positions
+                                .filter((p) => p.changePercent !== 0)
                                 .sort(
                                   (a, b) =>
                                     Math.abs(b.changePercent) -
                                     Math.abs(a.changePercent)
                                 )
                                 .slice(0, 4)
-                                .map((h, i) => (
+                                .map((p, i) => (
                                   <div
                                     key={i}
                                     className="flex items-center justify-between gap-2"
                                   >
-                                    <span className="text-xs truncate flex-1">
-                                      {h.name}
+                                    <span className="text-xs truncate flex-1 font-mono">
+                                      {p.ticker}
                                     </span>
                                     <span
                                       className={`text-xs font-mono font-semibold shrink-0 ${
-                                        h.changePercent > 0
+                                        p.changePercent > 0
                                           ? "text-emerald-500"
                                           : "text-red-500"
                                       }`}
                                     >
-                                      {h.changePercent > 0 ? "+" : ""}
-                                      {h.changePercent.toFixed(1)}%
+                                      {p.changePercent > 0 ? "+" : ""}
+                                      {p.changePercent.toFixed(1)}%
                                     </span>
                                   </div>
                                 ))}
@@ -361,7 +392,7 @@ export default function TickerPage({
                       )}
 
                       {/* Filing date */}
-                      {data.holders[0]?.reportDate && (
+                      {data.positions[0]?.reportDate && (
                         <>
                           <div className="h-px bg-border/40" />
                           <div>
@@ -369,10 +400,10 @@ export default function TickerPage({
                               Data as of
                             </p>
                             <p className="text-sm font-mono font-medium">
-                              {data.holders[0].reportDate}
+                              {data.positions[0].reportDate}
                             </p>
                             <p className="text-[10px] text-muted-foreground mt-0.5">
-                              Latest 13F filing period
+                              Latest filing period
                             </p>
                           </div>
                         </>
@@ -400,9 +431,10 @@ export default function TickerPage({
       </div>
 
       {/* Floating chat panel */}
-      <TickerChat
-        symbol={upperSymbol}
-        tickerData={data}
+      <InvestorChat
+        investor={data?.name || slug.replace(/-/g, " ")}
+        fund={data?.fund}
+        investorData={data}
         isOpen={chatOpen}
         onClose={() => setChatOpen(false)}
       />

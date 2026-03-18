@@ -35,3 +35,37 @@ export interface TickerData {
   totalBuyValue: number;
   totalSellValue: number;
 }
+
+export interface InvestorPosition {
+  ticker: string;
+  companyName: string;
+  shares: number;
+  value: number;
+  activity: "increased" | "decreased" | "new" | "closed" | "unchanged";
+  changePercent: number;
+  reportDate: string;
+}
+
+export interface InvestorTransaction {
+  ticker: string;
+  companyName: string;
+  type: "buy" | "sell" | "gift" | "exercise" | "award" | "other";
+  shares: number;
+  value: number;
+  pricePerShare: number;
+  date: string;
+}
+
+export interface InvestorData {
+  name: string;
+  fund: string;
+  title: string;
+  positions: InvestorPosition[];
+  transactions: InvestorTransaction[];
+  totalPortfolioValue: number;
+  totalPositions: number;
+  buyCount: number;
+  sellCount: number;
+  totalBuyValue: number;
+  totalSellValue: number;
+}

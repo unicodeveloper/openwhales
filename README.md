@@ -1,20 +1,24 @@
 # OpenWhale
 
-AI-powered financial analysis platform that tracks SEC filings to reveal what smart money — institutional investors, activist funds, and insiders — thinks about publicly traded stocks.
+AI-powered financial analysis platform that tracks SEC filings to reveal what smart money — institutional investors, activist funds, and insiders — thinks about publicly traded stocks and prominent fund managers.
 
 ## What It Does
 
-OpenWhale fetches real-time SEC filing data (13F institutional holdings, 13D/G activist disclosures, Form 4 insider trades) via the Valyu API, then uses AI to synthesize that data into actionable narratives for any given ticker.
+OpenWhale fetches real-time SEC filing data (13F institutional holdings, 13D/G activist disclosures, Form 4 insider trades) via the Valyu API, then uses AI to synthesize that data into actionable narratives. Users can look up any of 177 supported tickers or search 170+ prominent investors by name to see their portfolio holdings, recent transactions, and AI-generated strategy analysis.
 
 ### Key Features
 
 - **SEC Filing Analysis** — Pulls current 13F, 13D/G, and Form 4 data for any of 177 supported tickers
+- **Investor Name Search** — Search 170+ prominent investors (Buffett, Ackman, Cathie Wood, Dalio, etc.) by name to view portfolio holdings, transactions, and AI-generated investment strategy narratives
+- **Deep Dive Chat** — Multi-turn conversational analysis for both tickers and investors, powered by OpenAI with access to SEC, finance, economics, and company research tools
 - **AI-Generated Narratives** — Streams markdown analysis covering institutional ownership, activist shareholders, insider activity, and an overall smart money signal
 - **Trending Dashboard** — Surfaces stocks with notable smart money activity (cached with a 6-hour TTL)
 - **Data Visualizations** — Donut charts for insider buy/sell splits, bar charts for value breakdowns, and timeline components for transaction history
-- **Autocomplete Search** — Client-side ticker search with keyboard navigation
+- **Unified Search** — Autocomplete search across both tickers and investor names with keyboard navigation
+- **Two Deployment Modes** — Self-hosted (shared API key) or Valyu mode (per-user OAuth with individual billing)
 - **MacBook Terminal Demo** — Interactive scroll animation showcasing a Bloomberg-style terminal with institutional holdings and insider activity data
-- **Redis Caching** — Redis-backed cache with 6-hour TTL for ticker data, with graceful fallback when Redis is unavailable
+- **Dark Mode** — Toggleable light/dark theme
+- **Redis Caching** — Redis-backed cache with 6-hour TTL for ticker data, investor data, and narratives, with graceful fallback when Redis is unavailable
 
 ## Tech Stack
 
@@ -23,12 +27,14 @@ OpenWhale fetches real-time SEC filing data (13F institutional holdings, 13D/G a
 | Framework | Next.js 16 (App Router) |
 | Language | TypeScript 5 |
 | Styling | Tailwind CSS 4 |
-| AI / LLM | Vercel AI SDK + OpenAI (gpt-5.4) |
+| AI / LLM | Vercel AI SDK 6 + OpenAI (gpt-5.4) |
 | SEC Data | Valyu API (`@valyu/ai-sdk`) |
+| State | Zustand 5 |
 | Validation | Zod 4 |
 | Markdown | remark-gfm + streamdown |
-| UI | Lucide icons, Motion, Aceternity MacBook Scroll |
+| UI | Lucide icons, Phosphor icons, Motion, Aceternity MacBook Scroll |
 | Caching | Redis (ioredis) |
+| Auth | OAuth 2.0 PKCE (Valyu mode) |
 | Fonts | Inter, Space Grotesk, Playfair Display, JetBrains Mono |
 
 ## Project Structure
@@ -37,40 +43,66 @@ OpenWhale fetches real-time SEC filing data (13F institutional holdings, 13D/G a
 src/
 ├── app/
 │   ├── api/
-│   │   ├── ticker-data/route.ts   # Fetch institutional holders + insider transactions (Redis-cached 6h)
-│   │   ├── narrative/route.ts     # Stream AI-generated analysis
-│   │   ├── chat/route.ts          # Deep dive chat endpoint
-│   │   └── trending/route.ts      # Trending tickers (NDJSON, cached)
-│   ├── ticker/[symbol]/page.tsx   # Ticker detail page
-│   ├── page.tsx                   # Home (hero + MacBook demo + trending grid)
-│   └── layout.tsx                 # Root layout with nav + footer
+│   │   ├── ticker-data/route.ts        # Fetch institutional holders + insider transactions (Redis-cached 6h)
+│   │   ├── investor-data/route.ts      # Fetch investor portfolio + transactions from SEC filings
+│   │   ├── narrative/route.ts          # Stream AI-generated ticker analysis
+│   │   ├── investor-narrative/route.ts # Stream AI-generated investor strategy narrative
+│   │   ├── chat/route.ts              # Ticker deep dive chat (multi-turn, tool-augmented)
+│   │   ├── investor-chat/route.ts     # Investor deep dive chat (multi-turn, tool-augmented)
+│   │   ├── trending/route.ts          # Trending tickers (NDJSON, cached)
+│   │   ├── oauth/token/route.ts       # OAuth PKCE token exchange
+│   │   ├── oauth/refresh/route.ts     # OAuth token refresh
+│   │   └── valyu-proxy/route.ts       # Authenticated proxy for Valyu API calls
+│   ├── ticker/[symbol]/page.tsx       # Ticker detail page
+│   ├── investor/[slug]/page.tsx       # Investor profile page
+│   ├── auth/valyu/callback/page.tsx   # OAuth callback handler
+│   ├── page.tsx                       # Home (hero + MacBook demo + trending grid)
+│   └── layout.tsx                     # Root layout with nav + footer + auth initializer
 ├── components/
-│   ├── search-bar.tsx             # Ticker autocomplete
-│   ├── trending-grid.tsx          # Trending tickers grid
-│   ├── holdings-table.tsx         # 13F institutional holders table
-│   ├── buy-sell-chart.tsx         # Insider buy/sell donut + bar chart
-│   ├── insider-timeline.tsx       # Form 4 transaction timeline
-│   ├── narrative-stream.tsx       # Streaming markdown narrative
-│   ├── macbook-demo.tsx           # MacBook scroll showcase
-│   ├── terminal-screen.tsx        # Bloomberg-style terminal UI
-│   ├── rotating-words.tsx         # Animated rotating headline words
-│   ├── nav-bar.tsx                # Transparent (home) / solid (ticker) navbar
-│   ├── footer.tsx                 # Site footer
-│   ├── logo.tsx                   # OpenWhales whale tail icon
-│   └── ui/                        # Reusable UI primitives
+│   ├── search-bar.tsx                 # Unified ticker + investor autocomplete
+│   ├── trending-grid.tsx              # Trending tickers grid
+│   ├── holdings-table.tsx             # 13F institutional holders table
+│   ├── investor-portfolio-table.tsx   # Investor portfolio positions table (responsive)
+│   ├── investor-transactions.tsx      # Investor transaction timeline
+│   ├── buy-sell-chart.tsx             # Insider buy/sell donut + bar chart
+│   ├── insider-timeline.tsx           # Form 4 transaction timeline
+│   ├── narrative-stream.tsx           # Streaming markdown narrative
+│   ├── ticker-chat.tsx                # Floating chat panel for ticker deep dives
+│   ├── investor-chat.tsx              # Floating chat panel for investor deep dives
+│   ├── macbook-demo.tsx               # MacBook scroll showcase
+│   ├── terminal-screen.tsx            # Bloomberg-style terminal UI
+│   ├── rotating-words.tsx             # Animated rotating headline words
+│   ├── nav-bar.tsx                    # Transparent (home) / solid (detail) navbar
+│   ├── footer.tsx                     # Site footer
+│   ├── logo.tsx                       # OpenWhales whale tail icon
+│   ├── auth/                          # Auth components (gate, sign-in modal, initializer)
+│   └── ui/                            # Reusable UI primitives (button, card, dialog, skeleton, etc.)
 ├── hooks/
-│   ├── use-ticker-data.ts         # Fetch ticker data
-│   ├── use-narrative-stream.ts    # Stream narrative
-│   └── use-trending-data.ts       # Fetch trending with NDJSON parsing
+│   ├── use-ticker-data.ts             # Fetch ticker data
+│   ├── use-investor-data.ts           # Fetch investor portfolio data
+│   ├── use-narrative-stream.ts        # Stream ticker narrative
+│   ├── use-investor-narrative-stream.ts # Stream investor narrative
+│   ├── use-chat.ts                    # Multi-turn ticker chat
+│   ├── use-investor-chat.ts           # Multi-turn investor chat
+│   ├── use-trending-data.ts           # Fetch trending with NDJSON parsing
+│   └── use-auth-headers.ts            # Inject Bearer token into API requests
+├── stores/
+│   ├── auth-store.ts                  # Zustand auth state (user, tokens, refresh, modal)
+│   └── theme-store.ts                 # Zustand theme state (light/dark toggle)
 ├── lib/
-│   ├── valyu.ts                   # Valyu integration + AI utilities
-│   ├── redis.ts                   # Redis cache client (get/set with TTL, graceful fallback)
-│   ├── schemas.ts                 # Zod validation schemas
-│   ├── constants.ts               # App constants
-│   ├── tickers.ts                 # 177 supported ticker symbols
-│   └── utils.ts                   # Utility functions
+│   ├── valyu.ts                       # Core Valyu integration + AI narrative streaming
+│   ├── valyu-tools.ts                 # Valyu API tool wrappers (secSearch, financeSearch, economicsSearch, companyResearch)
+│   ├── auth-utils.ts                  # Server-side auth resolution (self-hosted vs Valyu mode)
+│   ├── oauth.ts                       # Client-side OAuth PKCE flow
+│   ├── app-mode.ts                    # App mode detection (self-hosted vs valyu)
+│   ├── redis.ts                       # Redis cache client (get/set with TTL, graceful fallback)
+│   ├── schemas.ts                     # Zod validation schemas
+│   ├── constants.ts                   # App constants
+│   ├── tickers.ts                     # 177 supported ticker symbols
+│   ├── investors.ts                   # 170+ prominent investor profiles
+│   └── utils.ts                       # Utility functions
 └── types/
-    └── index.ts                   # TypeScript interfaces
+    └── index.ts                       # TypeScript interfaces
 ```
 
 ## How It Works
@@ -82,12 +114,39 @@ src/
 3. On cache miss, it uses OpenAI with the Valyu `secSearch` tool to extract structured data — top 10 institutional holders, up to 15 insider transactions, buy/sell counts and totals. The result is then written to Redis for subsequent requests
 4. The UI renders holdings tables, buy/sell charts, and an insider timeline
 5. `/api/narrative` streams an AI-written analysis as markdown, citing filing dates for every claim (not cached — always fresh)
+6. A floating chat panel lets users ask follow-up questions with access to SEC, finance, economics, and company research tools
+
+### Investor Profile Page
+
+1. User searches for an investor by name (e.g. "Warren Buffett") via the unified search bar
+2. `/api/investor-data` uses OpenAI with Valyu's SEC search to extract portfolio positions from 13F filings and transactions from Form 4 filings
+3. Results are cached for 6 hours — subsequent visits return instantly
+4. The UI renders a portfolio table, buy/sell chart, transaction timeline, and quick stats sidebar
+5. `/api/investor-narrative` streams an AI-written investment strategy analysis covering portfolio overview, top positions, recent activity, and an overall investment signal (cached in background after streaming)
+6. A floating chat panel lets users ask follow-up questions about the investor's strategy
 
 ### Trending Page
 
 1. `/api/trending` fetches summaries for 8 major tickers (AAPL, NVDA, TSLA, MSFT, META, GOOGL, AMZN, PLTR)
 2. Results are streamed as NDJSON on cache miss, served as JSON on cache hit
 3. Each card shows top holders and net insider activity direction
+
+### Deep Dive Chat
+
+Both ticker and investor pages include a floating chat panel for multi-turn conversation. The chat endpoints use OpenAI with access to four Valyu-powered tools:
+
+- **secSearch** — SEC filings (13F, 13D/G, Form 4, 10-K, 10-Q, 8-K)
+- **financeSearch** — Stock data, earnings, balance sheets, cash flows, dividends
+- **economicsSearch** — BLS, FRED, World Bank data
+- **companyResearch** — Comprehensive company intelligence (leadership, products, news, funding, competitors, financials)
+
+### Authentication
+
+The app supports two deployment modes controlled by the `NEXT_PUBLIC_APP_MODE` environment variable:
+
+**Self-Hosted Mode** (`self-hosted`) — Uses a shared server-side `VALYU_API_KEY`. No user authentication required. All requests share the same API quota.
+
+**Valyu Mode** (`valyu`) — Each user authenticates via OAuth 2.0 PKCE with the Valyu platform. API calls are routed through an OAuth proxy, billing individual user credits. Protected pages show a sign-in overlay via the `AuthGate` component. Tokens auto-refresh with a 30-second buffer before expiry.
 
 ## Getting Started
 
@@ -101,10 +160,24 @@ src/
 Create a `.env.local` file:
 
 ```bash
+# Required
 OPENAI_API_KEY=sk-proj-...       # OpenAI API key
+
+# Self-Hosted Mode
 VALYU_API_KEY=val_...            # Valyu API key for SEC filing search
+NEXT_PUBLIC_APP_MODE=self-hosted # App mode
+
+# Valyu Mode (OAuth — alternative to self-hosted)
+NEXT_PUBLIC_APP_MODE=valyu
+NEXT_PUBLIC_VALYU_CLIENT_ID=...
+NEXT_PUBLIC_VALYU_AUTH_URL=...
+NEXT_PUBLIC_REDIRECT_URI=http://localhost:3000/auth/valyu/callback
+VALYU_CLIENT_SECRET=...
+VALYU_APP_URL=https://platform.valyu.ai
+
+# Optional
+REDIS_URL=redis://...            # Redis connection URL (app works without it, caching is skipped)
 ANTHROPIC_API_KEY=sk-ant-...     # Anthropic API key
-REDIS_URL=redis://...            # Redis connection URL (optional — app works without it, caching is skipped)
 ```
 
 ### Install & Run
@@ -132,10 +205,15 @@ The app works with these core data structures:
 - **InstitutionalHolder** — Name, shares, value, activity (increased/decreased/new/closed/unchanged), change percent, report date
 - **InsiderTx** — Name, title, type (buy/sell/gift/exercise/award), shares, value, price per share, date
 - **TickerData** — Aggregated holders + insider transactions with buy/sell counts and totals
+- **InvestorPosition** — Ticker, company name, shares, value, activity, change percent, report date
+- **InvestorTransaction** — Ticker, company name, type, shares, value, price per share, date
+- **InvestorData** — Portfolio positions + transactions with total portfolio value, buy/sell counts and totals
 - **TrendingTicker** — Symbol, top holders, and net insider activity direction
 
 ## Deploy
 
-Deploy on [Railway](https://railway.app) — connect your GitHub repo, set the environment variables (`OPENAI_API_KEY`, `VALYU_API_KEY`, `ANTHROPIC_API_KEY`), and Railway will auto-detect the Next.js framework and handle the rest.
+Deploy on [Railway](https://railway.app) — connect your GitHub repo, set the environment variables, and Railway will auto-detect the Next.js framework and handle the rest.
 
 For caching, add a Redis service in Railway and set `REDIS_URL` — Railway provides this automatically when you provision a Redis instance. The app works without Redis but will make fresh API calls on every request.
+
+For Valyu mode, set the OAuth environment variables and ensure the redirect URI matches your deployed domain (`https://yourdomain.com/auth/valyu/callback`).

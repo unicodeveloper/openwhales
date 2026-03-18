@@ -1,6 +1,6 @@
 import { streamText, generateText, stepCountIs } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { secSearch } from "@valyu/ai-sdk";
+import { secSearch } from "@/lib/valyu-tools";
 import type { TickerData } from "@/types";
 
 const SYSTEM_PROMPT = `You are OpenWhales, an AI analyst that synthesizes SEC filing data to reveal what smart money thinks about a stock.
@@ -66,6 +66,9 @@ export function streamNarrative(symbol: string, data: TickerData) {
   });
 }
 
+/** Valyu API key to use — defaults to env var for trending (server-initiated) calls */
+const DEFAULT_VALYU_KEY = process.env.VALYU_API_KEY || "";
+
 export async function fetchTrendingSummary(symbol: string) {
   try {
     const { text } = await generateText({
@@ -78,6 +81,7 @@ Respond ONLY with valid JSON, no markdown or explanation. Use this exact format:
 netDirection must be one of: "buying", "selling", "mixed", "none"`,
       tools: {
         secSearch: secSearch({
+          apiKey: DEFAULT_VALYU_KEY,
           maxNumResults: 10,
           responseLength: "medium",
         }),

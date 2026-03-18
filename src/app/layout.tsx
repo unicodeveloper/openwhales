@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono, Space_Grotesk, Playfair_Display } from "next/font/google";
 import { NavBar } from "@/components/nav-bar";
 import { Footer } from "@/components/footer";
+import { AuthInitializer } from "@/components/auth";
 import { SITE_NAME, SITE_DESCRIPTION, SITE_URL } from "@/lib/constants";
 import "./globals.css";
 
@@ -70,9 +71,11 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} ${spaceGrotesk.variable} ${playfairDisplay.variable} antialiased min-h-screen flex flex-col`}
       >
-        <NavBar />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <AuthInitializer>
+          <NavBar />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </AuthInitializer>
       </body>
     </html>
   );

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateText, Output, stepCountIs } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { secSearch } from "@valyu/ai-sdk";
 import { z } from "zod";
 import { NarrativeRequestSchema } from "@/lib/schemas";
 import { getCached, setCache } from "@/lib/redis";
+import { resolveAuth } from "@/lib/auth-utils";
+import { secSearch } from "@/lib/valyu-tools";
 import type { TickerData } from "@/types";
 
 const HolderSchema = z.object({
@@ -50,6 +51,11 @@ const CACHE_TTL_SECONDS = 6 * 60 * 60; // 6 hours
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = resolveAuth(request);
+    if (!auth.authorized) {
+      return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+    }
+
     const body = await request.json();
     const parsed = NarrativeRequestSchema.safeParse(body);
 
@@ -88,6 +94,8 @@ Key rules:
       prompt: `Find the top 10 institutional holders and recent insider transactions for ${symbol}. Set symbol to "${symbol}".`,
       tools: {
         secSearch: secSearch({
+          apiKey: auth.apiKey,
+          bearerToken: auth.bearerToken,
           maxNumResults: 10,
           responseLength: "large",
         }),
@@ -143,8 +151,10 @@ Key rules:
       totalSellValue: object.totalSellValue,
     };
 
-    // Cache for subsequent requests
-    await setCache(`ticker:${symbol}`, data, CACHE_TTL_SECONDS);
+    // Only cache if we actually got meaningful data
+    if (data.holders.length > 0 || data.insiderTransactions.length > 0) {
+      await setCache(`ticker:${symbol}`, data, CACHE_TTL_SECONDS);
+    }
 
     return NextResponse.json(data, {
       headers: { "X-Cache": "MISS" },

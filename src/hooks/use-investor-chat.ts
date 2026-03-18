@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import { useAuthHeaders } from "@/hooks/use-auth-headers";
-import type { TickerData } from "@/types";
+import type { InvestorData } from "@/types";
 
 export interface ChatMessage {
   id: string;
@@ -10,12 +10,13 @@ export interface ChatMessage {
   content: string;
 }
 
-interface UseChatOptions {
-  symbol: string;
-  tickerData: TickerData | null;
+interface UseInvestorChatOptions {
+  investor: string;
+  fund?: string;
+  investorData: InvestorData | null;
 }
 
-interface UseChatReturn {
+interface UseInvestorChatReturn {
   messages: ChatMessage[];
   input: string;
   setInput: (value: string) => void;
@@ -24,22 +25,25 @@ interface UseChatReturn {
   error: string | null;
 }
 
-function formatContext(data: TickerData): string {
+function formatContext(data: InvestorData): string {
   const lines: string[] = [];
 
-  if (data.holders.length > 0) {
-    lines.push("## Current 13F Data on Screen");
-    lines.push("| Fund | Shares | Value | Activity | Change % |");
+  lines.push(`## ${data.name} (${data.fund})`);
+  lines.push(`Portfolio: $${data.totalPortfolioValue.toLocaleString()} | ${data.totalPositions} positions`);
+
+  if (data.positions.length > 0) {
+    lines.push("\n## Top Positions on Screen");
+    lines.push("| Ticker | Company | Value | Activity | Change % |");
     lines.push("| --- | --- | --- | --- | --- |");
-    for (const h of data.holders) {
+    for (const p of data.positions.slice(0, 10)) {
       lines.push(
-        `| ${h.name} | ${h.shares.toLocaleString()} | $${h.value.toLocaleString()} | ${h.activity} | ${h.changePercent > 0 ? "+" : ""}${h.changePercent}% |`
+        `| ${p.ticker} | ${p.companyName} | $${p.value.toLocaleString()} | ${p.activity} | ${p.changePercent > 0 ? "+" : ""}${p.changePercent}% |`
       );
     }
   }
 
-  if (data.insiderTransactions.length > 0) {
-    lines.push("\n## Current Form 4 Data on Screen");
+  if (data.transactions.length > 0) {
+    lines.push("\n## Recent Transactions on Screen");
     lines.push(
       `Buys: ${data.buyCount} ($${data.totalBuyValue.toLocaleString()}) | Sells: ${data.sellCount} ($${data.totalSellValue.toLocaleString()})`
     );
@@ -53,7 +57,7 @@ function createId() {
   return `msg-${Date.now()}-${++messageIdCounter}`;
 }
 
-export function useChat({ symbol, tickerData }: UseChatOptions): UseChatReturn {
+export function useInvestorChat({ investor, fund, investorData }: UseInvestorChatOptions): UseInvestorChatReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -69,40 +73,28 @@ export function useChat({ symbol, tickerData }: UseChatOptions): UseChatReturn {
       setInput("");
       setError(null);
 
-      const userMessage: ChatMessage = {
-        id: createId(),
-        role: "user",
-        content: text,
-      };
-
-      const assistantMessage: ChatMessage = {
-        id: createId(),
-        role: "assistant",
-        content: "",
-      };
+      const userMessage: ChatMessage = { id: createId(), role: "user", content: text };
+      const assistantMessage: ChatMessage = { id: createId(), role: "assistant", content: "" };
 
       const updatedMessages = [...messages, userMessage];
       setMessages([...updatedMessages, assistantMessage]);
       setIsStreaming(true);
 
-      // Abort any previous request
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
 
-      const context = tickerData ? formatContext(tickerData) : undefined;
+      const context = investorData ? formatContext(investorData) : undefined;
 
       (async () => {
         try {
-          const response = await fetch("/api/chat", {
+          const response = await fetch("/api/investor-chat", {
             method: "POST",
             headers,
             body: JSON.stringify({
-              messages: updatedMessages.map((m) => ({
-                role: m.role,
-                content: m.content,
-              })),
-              symbol,
+              messages: updatedMessages.map((m) => ({ role: m.role, content: m.content })),
+              investor,
+              fund,
               context,
             }),
             signal: controller.signal,
@@ -110,10 +102,7 @@ export function useChat({ symbol, tickerData }: UseChatOptions): UseChatReturn {
 
           if (!response.ok) {
             const err = await response.json().catch(() => ({}));
-            setError(
-              (err as { error?: string }).error || "Something went wrong"
-            );
-            // Remove empty assistant message
+            setError((err as { error?: string }).error || "Something went wrong");
             setMessages(updatedMessages);
             setIsStreaming(false);
             return;
@@ -128,29 +117,20 @@ export function useChat({ symbol, tickerData }: UseChatOptions): UseChatReturn {
             if (done) break;
             accumulated += decoder.decode(value, { stream: true });
             const currentContent = accumulated;
-            setMessages([
-              ...updatedMessages,
-              { ...assistantMessage, content: currentContent },
-            ]);
+            setMessages([...updatedMessages, { ...assistantMessage, content: currentContent }]);
           }
 
-          // Final update
-          setMessages([
-            ...updatedMessages,
-            { ...assistantMessage, content: accumulated },
-          ]);
+          setMessages([...updatedMessages, { ...assistantMessage, content: accumulated }]);
         } catch (err) {
           if ((err as Error).name === "AbortError") return;
-          setError(
-            err instanceof Error ? err.message : "Failed to get response"
-          );
+          setError(err instanceof Error ? err.message : "Failed to get response");
           setMessages(updatedMessages);
         } finally {
           setIsStreaming(false);
         }
       })();
     },
-    [input, isStreaming, messages, symbol, tickerData]
+    [input, isStreaming, messages, investor, fund, investorData, headers]
   );
 
   return { messages, input, setInput, sendMessage, isStreaming, error };

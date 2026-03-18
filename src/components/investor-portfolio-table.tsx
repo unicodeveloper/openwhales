@@ -1,0 +1,191 @@
+"use client";
+
+import Link from "next/link";
+import type { InvestorPosition } from "@/types";
+
+interface InvestorPortfolioTableProps {
+  positions: InvestorPosition[];
+}
+
+const activityConfig = {
+  increased: { label: "Increased", color: "text-emerald-500", icon: "+" },
+  decreased: { label: "Decreased", color: "text-red-500", icon: "-" },
+  new: { label: "New", color: "text-blue-500", icon: "★" },
+  closed: { label: "Closed", color: "text-orange-500", icon: "✕" },
+  unchanged: { label: "Unchanged", color: "text-gray-400", icon: "=" },
+};
+
+export function InvestorPortfolioTable({ positions }: InvestorPortfolioTableProps) {
+  if (!positions.length) return null;
+
+  const maxValue = Math.max(...positions.map((p) => p.value));
+
+  return (
+    <>
+      {/* Mobile card layout */}
+      <div className="sm:hidden space-y-3">
+        {positions.map((pos, i) => {
+          const cfg = activityConfig[pos.activity] || activityConfig.unchanged;
+          const barWidth = maxValue > 0 ? (pos.value / maxValue) * 100 : 0;
+
+          return (
+            <Link
+              key={`${pos.ticker}-${i}`}
+              href={`/ticker/${pos.ticker}`}
+              className="block rounded-lg border border-border/30 p-3 space-y-2 hover:bg-muted/30 transition-colors"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-sm text-amber-600 dark:text-amber-400">
+                      {pos.ticker}
+                    </span>
+                    <span className="text-sm truncate text-muted-foreground">{pos.companyName}</span>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">{pos.reportDate}</span>
+                </div>
+                <span
+                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${cfg.color}`}
+                  style={{
+                    backgroundColor: `color-mix(in srgb, currentColor 10%, transparent)`,
+                  }}
+                >
+                  <span className="text-[9px]">{cfg.icon}</span>
+                  {cfg.label}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-3 text-xs">
+                <div>
+                  <span className="text-muted-foreground">Shares: </span>
+                  <span className="font-mono">{formatShares(pos.shares)}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Value: </span>
+                  <span className="font-mono font-medium">{formatValue(pos.value)}</span>
+                </div>
+                <span
+                  className={`font-mono text-xs font-medium ${
+                    (pos.changePercent ?? 0) > 0
+                      ? "text-emerald-500"
+                      : (pos.changePercent ?? 0) < 0
+                      ? "text-red-500"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {(pos.changePercent ?? 0) > 0 ? "+" : ""}
+                  {(pos.changePercent ?? 0).toFixed(2)}%
+                </span>
+              </div>
+              <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500"
+                  style={{ width: `${barWidth}%` }}
+                />
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Desktop table layout */}
+      <div className="hidden sm:block overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border/60 text-xs uppercase tracking-wider text-muted-foreground">
+              <th className="text-left py-3 pr-4 font-medium">#</th>
+              <th className="text-left py-3 pr-4 font-medium">Ticker</th>
+              <th className="text-left py-3 pr-4 font-medium">Company</th>
+              <th className="text-right py-3 pr-4 font-medium">Shares</th>
+              <th className="text-right py-3 pr-4 font-medium">Value</th>
+              <th className="text-left py-3 pr-4 font-medium">Activity</th>
+              <th className="text-right py-3 font-medium">Change</th>
+            </tr>
+          </thead>
+          <tbody>
+            {positions.map((pos, i) => {
+              const cfg = activityConfig[pos.activity] || activityConfig.unchanged;
+              const barWidth = maxValue > 0 ? (pos.value / maxValue) * 100 : 0;
+
+              return (
+                <tr
+                  key={`${pos.ticker}-${i}`}
+                  className="border-b border-border/30 hover:bg-muted/30 transition-colors group"
+                >
+                  <td className="py-3 pr-4 text-muted-foreground font-mono text-xs">
+                    {i + 1}
+                  </td>
+                  <td className="py-3 pr-4">
+                    <Link
+                      href={`/ticker/${pos.ticker}`}
+                      className="font-mono font-bold text-amber-600 dark:text-amber-400 hover:underline"
+                    >
+                      {pos.ticker}
+                    </Link>
+                  </td>
+                  <td className="py-3 pr-4 min-w-[160px]">
+                    <div className="leading-snug">{pos.companyName}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {pos.reportDate}
+                    </div>
+                  </td>
+                  <td className="py-3 pr-4 text-right font-mono">
+                    {formatShares(pos.shares)}
+                  </td>
+                  <td className="py-3 pr-4 text-right">
+                    <div className="font-mono font-medium">{formatValue(pos.value)}</div>
+                    <div className="mt-1 h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500"
+                        style={{ width: `${barWidth}%` }}
+                      />
+                    </div>
+                  </td>
+                  <td className="py-3 pr-4">
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.color}`}
+                      style={{
+                        backgroundColor: `color-mix(in srgb, currentColor 10%, transparent)`,
+                      }}
+                    >
+                      <span className="text-[10px]">{cfg.icon}</span>
+                      {cfg.label}
+                    </span>
+                  </td>
+                  <td className="py-3 text-right">
+                    <span
+                      className={`font-mono text-xs font-medium ${
+                        (pos.changePercent ?? 0) > 0
+                          ? "text-emerald-500"
+                          : (pos.changePercent ?? 0) < 0
+                          ? "text-red-500"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {(pos.changePercent ?? 0) > 0 ? "+" : ""}
+                      {(pos.changePercent ?? 0).toFixed(2)}%
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
+function formatValue(value: number): string {
+  if (value >= 1e12) return `$${(value / 1e12).toFixed(1)}T`;
+  if (value >= 1e9) return `$${(value / 1e9).toFixed(1)}B`;
+  if (value >= 1e6) return `$${(value / 1e6).toFixed(1)}M`;
+  if (value >= 1e3) return `$${(value / 1e3).toFixed(0)}K`;
+  return `$${value.toLocaleString()}`;
+}
+
+function formatShares(shares: number): string {
+  if (shares >= 1e9) return `${(shares / 1e9).toFixed(1)}B`;
+  if (shares >= 1e6) return `${(shares / 1e6).toFixed(1)}M`;
+  if (shares >= 1e3) return `${(shares / 1e3).toFixed(1)}K`;
+  return shares.toLocaleString();
+}
