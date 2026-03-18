@@ -47,23 +47,23 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
-    title: SITE_NAME,
+    title: SITE_TITLE,
     description: SITE_DESCRIPTION,
     url: SITE_URL,
     images: [
       {
-        url: "/opengraph-image",
+        url: `${SITE_URL}/opengraph-image`,
         width: 1200,
         height: 630,
-        alt: "OpenWhales — AI-powered SEC filing analysis",
+        alt: "OpenWhales — Smart Money SEC Filing Intelligence",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: SITE_NAME,
+    title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    images: ["/opengraph-image"],
+    images: [`${SITE_URL}/opengraph-image`],
   },
   robots: {
     index: true,
