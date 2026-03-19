@@ -62,12 +62,6 @@ NEXT_PUBLIC_APP_MODE=self-hosted
 NEXT_PUBLIC_APP_MODE=valyu
 ```
 
-- **Requires user authentication** via OAuth 2.0 with PKCE (Valyu as identity provider)
-- Each user signs in with their Valyu account and uses their own credits
-- API costs are billed to the individual user's Valyu account
-- Ideal for public-facing deployments like [open-whales.com](https://open-whales.com)
-- Requires OAuth configuration: `NEXT_PUBLIC_VALYU_CLIENT_ID`, `VALYU_CLIENT_SECRET`, `NEXT_PUBLIC_VALYU_AUTH_URL`, `VALYU_APP_URL`, and `NEXT_PUBLIC_REDIRECT_URI`
-
 ## Tech Stack
 
 | Component | Technology |
@@ -93,78 +87,6 @@ NEXT_PUBLIC_APP_MODE=valyu
 - npm
 - Valyu API key (get one at [platform.valyu.ai](https://platform.valyu.ai))
 - OpenAI API key
-
-### Option A: Self-Hosted Mode
-
-Best for personal use or internal teams. You provide your own API keys and all users share a single Valyu quota. No sign-in required.
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/unicodeveloper/openwhales.git
-   cd openwhales
-   ```
-
-2. **Set up environment variables**
-   ```bash
-   cp .env.example .env.local
-   ```
-
-   ```env
-   OPENAI_API_KEY=sk-proj-...           # OpenAI API key
-   VALYU_API_KEY=val_...                # Valyu API key
-   NEXT_PUBLIC_APP_MODE=self-hosted
-
-   # Optional
-   REDIS_URL=redis://localhost:6379     # Enables 6h caching (app works without it)
-   ```
-
-3. **Install and run**
-   ```bash
-   npm install
-   npm run dev
-   ```
-
-4. **Open [http://localhost:3000](http://localhost:3000)** — No login needed, start searching immediately.
-
-### Option B: Valyu Mode (Multi-User with OAuth)
-
-Best for public deployments where each user signs in with their own [Valyu](https://platform.valyu.ai) account and uses their own credits.
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/unicodeveloper/openwhales.git
-   cd openwhales
-   ```
-
-2. **Register an OAuth application** on the [Valyu platform](https://platform.valyu.ai) to get your client ID and secret
-
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env.local
-   ```
-
-   ```env
-   OPENAI_API_KEY=sk-proj-...           # OpenAI API key
-   NEXT_PUBLIC_APP_MODE=valyu
-
-   # OAuth credentials (from Valyu platform)
-   NEXT_PUBLIC_VALYU_CLIENT_ID=...      # OAuth client ID
-   VALYU_CLIENT_SECRET=...              # OAuth client secret
-   NEXT_PUBLIC_VALYU_AUTH_URL=https://auth.valyu.ai
-   VALYU_APP_URL=https://platform.valyu.ai
-   NEXT_PUBLIC_REDIRECT_URI=http://localhost:3000/auth/valyu/callback
-
-   # Optional
-   REDIS_URL=redis://localhost:6379     # Enables 6h caching (app works without it)
-   ```
-
-4. **Install and run**
-   ```bash
-   npm install
-   npm run dev
-   ```
-
-5. **Open [http://localhost:3000](http://localhost:3000)** — Users will see a sign-in prompt before accessing ticker or investor pages.
 
 ## Usage
 
