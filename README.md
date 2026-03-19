@@ -1,6 +1,8 @@
 # [open-whales.com](https://open-whales.com)
 
-![OpenWhales](public/og-image.png)
+![OpenWhales Hero](openwhales.png)
+
+![OpenWhales Terminal](terminal.png)
 
 **OpenWhales** is an open-source, AI-powered SEC filing intelligence platform. Track what smart money (institutional investors, activist funds, and corporate insiders) is doing across 177 public stocks and 130+ prominent fund managers. Search by ticker or investor name to surface 13F holdings, Form 4 insider trades, and 13D/G activist stakes, then get AI-synthesized narratives that connect the dots.
 
