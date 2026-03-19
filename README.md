@@ -326,26 +326,6 @@ For caching, add a Redis service in Railway and set `REDIS_URL` — Railway prov
 
 For Valyu mode, set the OAuth environment variables and ensure the redirect URI matches your deployed domain (`https://yourdomain.com/auth/valyu/callback`).
 
-### Vercel
-
-```bash
-npm i -g vercel
-vercel
-```
-
-Add environment variables in the Vercel dashboard.
-
-### Docker
-
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-CMD ["npm", "start"]
-```
 
 ## Contributing
 
