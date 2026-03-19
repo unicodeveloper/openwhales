@@ -2,18 +2,20 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Building2, User, AlertCircle } from "lucide-react";
+import { Search, Building2, User, AlertCircle, Landmark } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { TICKERS } from "@/lib/tickers";
 import { INVESTORS } from "@/lib/investors";
+import { FUNDS } from "@/lib/funds";
 import { useAuthStore } from "@/stores/auth-store";
 import { isValyuMode } from "@/lib/app-mode";
 import { SignInModal } from "@/components/auth";
 
 type SearchResult =
   | { kind: "ticker"; symbol: string; name: string }
-  | { kind: "investor"; name: string; fund: string; slug: string };
+  | { kind: "investor"; name: string; fund: string; slug: string }
+  | { kind: "fund"; name: string; slug: string; keyPeople: string[] };
 
 interface SearchBarProps {
   size?: "default" | "large";
@@ -69,8 +71,7 @@ export function SearchBar({ size = "default", className = "" }: SearchBarProps) 
 
     const investorMatches: SearchResult[] = INVESTORS.filter(
       (inv) =>
-        inv.name.toLowerCase().includes(lowerQ) ||
-        inv.fund.toLowerCase().includes(lowerQ)
+        inv.name.toLowerCase().includes(lowerQ)
     )
       .slice(0, 5)
       .map((inv) => ({
@@ -80,7 +81,18 @@ export function SearchBar({ size = "default", className = "" }: SearchBarProps) 
         slug: inv.slug,
       }));
 
-    return [...tickerMatches, ...investorMatches].slice(0, 8);
+    const fundMatches: SearchResult[] = FUNDS.filter(
+      (f) => f.name.toLowerCase().includes(lowerQ)
+    )
+      .slice(0, 5)
+      .map((f) => ({
+        kind: "fund",
+        name: f.name,
+        slug: f.slug,
+        keyPeople: f.keyPeople,
+      }));
+
+    return [...tickerMatches, ...fundMatches, ...investorMatches].slice(0, 8);
   }, [query]);
 
   function navigate(result: SearchResult) {
@@ -96,6 +108,9 @@ export function SearchBar({ size = "default", className = "" }: SearchBarProps) 
     if (result.kind === "ticker") {
       setQuery(result.symbol);
       router.push(`/ticker/${result.symbol}`);
+    } else if (result.kind === "fund") {
+      setQuery(result.name);
+      router.push(`/fund/${result.slug}`);
     } else {
       setQuery(result.name);
       router.push(`/investor/${result.slug}`);
@@ -126,6 +141,15 @@ export function SearchBar({ size = "default", className = "" }: SearchBarProps) 
       router.push(`/ticker/${cleaned}`);
       return;
     }
+    // Try to find a matching fund
+    const fundMatch = FUNDS.find(
+      (f) => f.name.toLowerCase() === query.trim().toLowerCase()
+    );
+    if (fundMatch) {
+      setQuery(fundMatch.name);
+      router.push(`/fund/${fundMatch.slug}`);
+      return;
+    }
     // Otherwise, try to find a matching investor
     const investorMatch = INVESTORS.find(
       (inv) => inv.name.toLowerCase() === query.trim().toLowerCase()
@@ -135,7 +159,7 @@ export function SearchBar({ size = "default", className = "" }: SearchBarProps) 
       router.push(`/investor/${investorMatch.slug}`);
       return;
     }
-    showError("Try a ticker like AAPL or an investor like Bill Ackman");
+    showError("Try a ticker like AAPL, a fund like Citadel, or an investor name");
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -194,7 +218,7 @@ export function SearchBar({ size = "default", className = "" }: SearchBarProps) 
           <Input
             ref={inputRef}
             type="text"
-            placeholder="Search ticker, company, or investor name..."
+            placeholder="Search ticker, fund, or investor name..."
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -232,6 +256,8 @@ export function SearchBar({ size = "default", className = "" }: SearchBarProps) 
                   key={
                     match.kind === "ticker"
                       ? `t-${match.symbol}`
+                      : match.kind === "fund"
+                      ? `f-${match.slug}`
                       : `i-${match.slug}`
                   }
                   id={`search-option-${i}`}
@@ -254,6 +280,16 @@ export function SearchBar({ size = "default", className = "" }: SearchBarProps) 
                       </span>
                       <span className="text-sm text-muted-foreground truncate">
                         {match.name}
+                      </span>
+                    </>
+                  ) : match.kind === "fund" ? (
+                    <>
+                      <Landmark className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="font-semibold text-sm text-blue-600 dark:text-blue-400 shrink-0">
+                        {match.name}
+                      </span>
+                      <span className="text-sm text-muted-foreground truncate">
+                        Fund
                       </span>
                     </>
                   ) : (

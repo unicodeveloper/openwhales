@@ -69,3 +69,36 @@ export interface InvestorData {
   totalBuyValue: number;
   totalSellValue: number;
 }
+
+export interface FundPosition {
+  ticker: string;
+  companyName: string;
+  shares: number;
+  value: number;
+  activity: "increased" | "decreased" | "new" | "closed" | "unchanged";
+  changePercent: number;
+  reportDate: string;
+}
+
+export interface FundTransaction {
+  ticker: string;
+  companyName: string;
+  type: "buy" | "sell" | "gift" | "exercise" | "award" | "other";
+  shares: number;
+  value: number;
+  pricePerShare: number;
+  date: string;
+}
+
+export interface FundData {
+  name: string;
+  keyPeople: string[];
+  positions: FundPosition[];
+  transactions: FundTransaction[];
+  totalPortfolioValue: number;
+  totalPositions: number;
+  buyCount: number;
+  sellCount: number;
+  totalBuyValue: number;
+  totalSellValue: number;
+}
