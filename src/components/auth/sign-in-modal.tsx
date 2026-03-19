@@ -89,15 +89,15 @@ export function SignInModal({ open, onOpenChange }: SignInModalProps) {
             {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Redirecting to Valyu...
+                Redirecting...
               </>
             ) : (
-              "Continue with Valyu"
+              "Sign in for free"
             )}
           </button>
 
           <p className="mt-3.5 text-center text-[11px] text-muted-foreground">
-            Free to sign up. Your Valyu credits power the searches.
+            Don&apos;t have an account? Create one during sign-in.
           </p>
         </div>
 
