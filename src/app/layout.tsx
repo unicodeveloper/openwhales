@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono, Space_Grotesk, Playfair_Display } from "next/fon
 import { NavBar } from "@/components/nav-bar";
 import { Footer } from "@/components/footer";
 import { AuthInitializer } from "@/components/auth";
+import { DiscordBanner } from "@/components/discord-banner";
 import { SITE_NAME, SITE_TITLE, SITE_DESCRIPTION, SITE_URL } from "@/lib/constants";
 import "./globals.css";
 
@@ -85,6 +86,7 @@ export default function RootLayout({
           <NavBar />
           <main className="flex-1">{children}</main>
           <Footer />
+          <DiscordBanner />
         </AuthInitializer>
       </body>
     </html>
