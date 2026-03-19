@@ -6,6 +6,7 @@ import { getCached, setCache } from "@/lib/redis";
 import { findInvestorBySlug } from "@/lib/investors";
 import { resolveAuth } from "@/lib/auth-utils";
 import { secSearch } from "@/lib/valyu-tools";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import type { InvestorData } from "@/types";
 
 const PositionSchema = z.object({
@@ -52,6 +53,11 @@ const CACHE_TTL_SECONDS = 6 * 60 * 60; // 6 hours
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 15 requests per minute per IP
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(`investor-data:${ip}`, { maxRequests: 15, windowSeconds: 60 });
+    if (!rl.allowed) return rateLimitResponse(rl.resetAt);
+
     const auth = resolveAuth(request);
     if (!auth.authorized) {
       return NextResponse.json({ error: "Authentication required." }, { status: 401 });

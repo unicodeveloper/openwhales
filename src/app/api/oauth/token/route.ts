@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 /**
  * API route for exchanging authorization code for access token
@@ -6,6 +7,11 @@ import { NextRequest, NextResponse } from "next/server";
  */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 10 token exchanges per minute per IP (prevents brute-force)
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(`oauth-token:${ip}`, { maxRequests: 10, windowSeconds: 60 });
+    if (!rl.allowed) return rateLimitResponse(rl.resetAt);
+
     const { code, codeVerifier } = await request.json();
 
     if (!code || !codeVerifier) {
@@ -41,7 +47,7 @@ export async function POST(request: NextRequest) {
       const errorData = await tokenResponse.text();
       console.error("Token exchange failed:", errorData);
       return NextResponse.json(
-        { error: "Token exchange failed", details: errorData },
+        { error: "Token exchange failed" },
         { status: tokenResponse.status }
       );
     }
@@ -85,10 +91,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Token exchange error:", error);
     return NextResponse.json(
-      {
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

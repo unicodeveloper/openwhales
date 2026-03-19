@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 /**
  * Token refresh endpoint - exchanges a refresh token for new access/refresh tokens.
  */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 15 refresh attempts per minute per IP
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(`oauth-refresh:${ip}`, { maxRequests: 15, windowSeconds: 60 });
+    if (!rl.allowed) return rateLimitResponse(rl.resetAt);
+
     const { refreshToken } = await request.json();
 
     if (!refreshToken) {

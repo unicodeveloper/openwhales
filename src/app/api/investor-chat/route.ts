@@ -3,6 +3,7 @@ import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { resolveAuth } from "@/lib/auth-utils";
 import { secSearch, financeSearch, companyResearch } from "@/lib/valyu-tools";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 const MessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
@@ -37,6 +38,11 @@ Rules:
 
 export async function POST(request: Request) {
   try {
+    // Rate limit: 20 requests per minute per IP
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(`investor-chat:${ip}`, { maxRequests: 20, windowSeconds: 60 });
+    if (!rl.allowed) return rateLimitResponse(rl.resetAt);
+
     const req = request as import("next/server").NextRequest;
     const auth = resolveAuth(req);
     if (!auth.authorized) {

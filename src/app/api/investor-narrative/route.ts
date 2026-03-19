@@ -3,18 +3,39 @@ import { streamText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { getCached, setCache } from "@/lib/redis";
+import { resolveAuth } from "@/lib/auth-utils";
 import type { InvestorData } from "@/types";
 
 const NARRATIVE_CACHE_TTL_SECONDS = 6 * 60 * 60; // 6 hours — matches investor data TTL
 
+const PositionSchema = z.object({
+  ticker: z.string(),
+  companyName: z.string(),
+  shares: z.number(),
+  value: z.number(),
+  activity: z.enum(["increased", "decreased", "new", "closed", "unchanged"]),
+  changePercent: z.number(),
+  reportDate: z.string(),
+});
+
+const TransactionSchema = z.object({
+  ticker: z.string(),
+  companyName: z.string(),
+  type: z.enum(["buy", "sell", "gift", "exercise", "award", "other"]),
+  shares: z.number(),
+  value: z.number(),
+  pricePerShare: z.number(),
+  date: z.string(),
+});
+
 const RequestSchema = z.object({
-  slug: z.string().min(1),
+  slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/),
   data: z.object({
-    name: z.string(),
-    fund: z.string(),
-    title: z.string(),
-    positions: z.array(z.any()),
-    transactions: z.array(z.any()),
+    name: z.string().max(200),
+    fund: z.string().max(200),
+    title: z.string().max(200),
+    positions: z.array(PositionSchema),
+    transactions: z.array(TransactionSchema),
     totalPortfolioValue: z.number(),
     totalPositions: z.number(),
     buyCount: z.number(),
@@ -82,6 +103,14 @@ function formatDataForPrompt(data: InvestorData): string {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = resolveAuth(request);
+    if (!auth.authorized) {
+      return NextResponse.json(
+        { error: "Authentication required." },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const parsed = RequestSchema.safeParse(body);
 

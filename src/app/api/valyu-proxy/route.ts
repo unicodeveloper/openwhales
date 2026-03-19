@@ -1,5 +1,15 @@
 import { NextResponse } from "next/server";
 
+/** Allowed API paths the proxy can forward to — prevents SSRF */
+const ALLOWED_PATHS = new Set([
+  "/v1/deepsearch",
+  "/v1/answer",
+  "/v1/search",
+]);
+
+/** Allowed HTTP methods */
+const ALLOWED_METHODS = new Set(["GET", "POST"]);
+
 export async function POST(request: Request) {
   try {
     const authHeader = request.headers.get("Authorization");
@@ -14,10 +24,27 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { path, method, body: requestBody } = body;
 
-    if (!path) {
+    if (!path || typeof path !== "string") {
       return NextResponse.json(
         { error: "invalid_request", message: "Missing path parameter" },
         { status: 400 }
+      );
+    }
+
+    // Validate path against allowlist to prevent SSRF
+    if (!ALLOWED_PATHS.has(path)) {
+      return NextResponse.json(
+        { error: "invalid_request", message: "Disallowed proxy path" },
+        { status: 403 }
+      );
+    }
+
+    // Validate HTTP method
+    const resolvedMethod = (method || "POST").toUpperCase();
+    if (!ALLOWED_METHODS.has(resolvedMethod)) {
+      return NextResponse.json(
+        { error: "invalid_request", message: "Disallowed HTTP method" },
+        { status: 403 }
       );
     }
 
@@ -32,7 +59,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         path,
-        method: method || "POST",
+        method: resolvedMethod,
         body: requestBody,
       }),
     });
@@ -54,7 +81,6 @@ export async function POST(request: Request) {
             error: "auth_error",
             message: "Session expired. Please sign in again.",
             requiresReauth: true,
-            details: errorData,
           },
           { status: 401 }
         );
@@ -78,7 +104,7 @@ export async function POST(request: Request) {
       }
 
       return NextResponse.json(
-        { error: "proxy_error", message: errorData.message || "Request failed", details: errorData },
+        { error: "proxy_error", message: "Request failed" },
         { status: response.status }
       );
     }

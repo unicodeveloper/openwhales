@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import { useAuthStore } from "@/stores/auth-store";
 import type { TickerData } from "@/types";
 
 interface UseNarrativeStreamReturn {
@@ -29,9 +30,13 @@ export function useNarrativeStream(
 
       (async () => {
         try {
+          const headers: Record<string, string> = { "Content-Type": "application/json" };
+          const token = useAuthStore.getState().getAccessToken();
+          if (token) headers["Authorization"] = `Bearer ${token}`;
+
           const response = await fetch("/api/narrative", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify({ symbol, data }),
           });
 

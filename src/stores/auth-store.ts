@@ -36,15 +36,20 @@ interface AuthState {
   closeSignInModal: () => void;
 }
 
+/**
+ * Token and user persistence uses sessionStorage (not localStorage) to reduce
+ * the XSS attack surface — sessionStorage is scoped to the tab and cleared
+ * when the tab closes, limiting the window for token theft.
+ */
 function saveTokens(tokens: TokenData): void {
   if (typeof window === "undefined") return;
-  localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(tokens));
+  sessionStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(tokens));
 }
 
 function loadTokens(): TokenData | null {
   if (typeof window === "undefined") return null;
   try {
-    const stored = localStorage.getItem(TOKEN_STORAGE_KEY);
+    const stored = sessionStorage.getItem(TOKEN_STORAGE_KEY);
     if (!stored) return null;
     return JSON.parse(stored);
   } catch {
@@ -54,18 +59,20 @@ function loadTokens(): TokenData | null {
 
 function clearTokens(): void {
   if (typeof window === "undefined") return;
+  sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+  // Also clear any legacy localStorage tokens from prior versions
   localStorage.removeItem(TOKEN_STORAGE_KEY);
 }
 
 function saveUser(user: User): void {
   if (typeof window === "undefined") return;
-  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+  sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
 }
 
 function loadUser(): User | null {
   if (typeof window === "undefined") return null;
   try {
-    const stored = localStorage.getItem(USER_STORAGE_KEY);
+    const stored = sessionStorage.getItem(USER_STORAGE_KEY);
     if (!stored) return null;
     return JSON.parse(stored);
   } catch {
@@ -75,6 +82,8 @@ function loadUser(): User | null {
 
 function clearUser(): void {
   if (typeof window === "undefined") return;
+  sessionStorage.removeItem(USER_STORAGE_KEY);
+  // Also clear any legacy localStorage data from prior versions
   localStorage.removeItem(USER_STORAGE_KEY);
 }
 
