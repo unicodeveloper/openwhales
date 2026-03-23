@@ -1,4 +1,5 @@
 import { INVESTORS } from "./investors";
+import { toSlug } from "./slug";
 
 export interface Fund {
   name: string;
@@ -24,10 +25,7 @@ function buildFundsList(): Fund[] {
 
   return Array.from(fundMap.entries()).map(([name, keyPeople]) => ({
     name,
-    slug: name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, ""),
+    slug: toSlug(name),
     keyPeople,
   }));
 }

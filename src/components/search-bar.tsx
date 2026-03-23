@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { TICKERS } from "@/lib/tickers";
 import { INVESTORS } from "@/lib/investors";
 import { FUNDS } from "@/lib/funds";
+import { toSlug } from "@/lib/slug";
 import { useAuthStore } from "@/stores/auth-store";
 import { isValyuMode } from "@/lib/app-mode";
 import { SignInModal } from "@/components/auth";
@@ -15,7 +16,10 @@ import { SignInModal } from "@/components/auth";
 type SearchResult =
   | { kind: "ticker"; symbol: string; name: string }
   | { kind: "investor"; name: string; fund: string; slug: string }
-  | { kind: "fund"; name: string; slug: string; keyPeople: string[] };
+  | { kind: "fund"; name: string; slug: string; keyPeople: string[] }
+  | { kind: "search-ticker"; symbol: string }
+  | { kind: "search-fund"; name: string; slug: string }
+  | { kind: "search-investor"; name: string; slug: string };
 
 interface SearchBarProps {
   size?: "default" | "large";
@@ -92,7 +96,42 @@ export function SearchBar({ size = "default", className = "" }: SearchBarProps) 
         keyPeople: f.keyPeople,
       }));
 
-    return [...tickerMatches, ...fundMatches, ...investorMatches].slice(0, 8);
+    const knownResults = [...tickerMatches, ...fundMatches, ...investorMatches].slice(0, 8);
+
+    // If there are few or no known matches and the query is long enough,
+    // add free-text search options so the user can search for any ticker, fund, or investor
+    if (q.length >= 1 && knownResults.length < 3) {
+      // Show "search as ticker" if input looks like a ticker symbol (letters/dots, 1-5 chars)
+      const mayBeTicker = /^[A-Za-z.]{1,5}$/.test(q.trim());
+      if (mayBeTicker) {
+        const hasTickerMatch = knownResults.some(
+          (r) => r.kind === "ticker" && r.symbol === upperQ
+        );
+        if (!hasTickerMatch) {
+          knownResults.push({ kind: "search-ticker", symbol: upperQ });
+        }
+      }
+
+      if (q.length >= 2) {
+        const slug = toSlug(q);
+        if (slug) {
+          const hasFundMatch = knownResults.some(
+            (r) => r.kind === "fund" && r.name.toLowerCase() === lowerQ
+          );
+          const hasInvestorMatch = knownResults.some(
+            (r) => r.kind === "investor" && r.name.toLowerCase() === lowerQ
+          );
+          if (!hasFundMatch) {
+            knownResults.push({ kind: "search-fund", name: q.trim(), slug });
+          }
+          if (!hasInvestorMatch) {
+            knownResults.push({ kind: "search-investor", name: q.trim(), slug });
+          }
+        }
+      }
+    }
+
+    return knownResults;
   }, [query]);
 
   function navigate(result: SearchResult) {
@@ -105,10 +144,10 @@ export function SearchBar({ size = "default", className = "" }: SearchBarProps) 
       return;
     }
 
-    if (result.kind === "ticker") {
+    if (result.kind === "ticker" || result.kind === "search-ticker") {
       setQuery(result.symbol);
       router.push(`/ticker/${result.symbol}`);
-    } else if (result.kind === "fund") {
+    } else if (result.kind === "fund" || result.kind === "search-fund") {
       setQuery(result.name);
       router.push(`/fund/${result.slug}`);
     } else {
@@ -141,7 +180,7 @@ export function SearchBar({ size = "default", className = "" }: SearchBarProps) 
       router.push(`/ticker/${cleaned}`);
       return;
     }
-    // Try to find a matching fund
+    // Try to find a matching fund in known list
     const fundMatch = FUNDS.find(
       (f) => f.name.toLowerCase() === query.trim().toLowerCase()
     );
@@ -150,7 +189,7 @@ export function SearchBar({ size = "default", className = "" }: SearchBarProps) 
       router.push(`/fund/${fundMatch.slug}`);
       return;
     }
-    // Otherwise, try to find a matching investor
+    // Try to find a matching investor in known list
     const investorMatch = INVESTORS.find(
       (inv) => inv.name.toLowerCase() === query.trim().toLowerCase()
     );
@@ -159,7 +198,14 @@ export function SearchBar({ size = "default", className = "" }: SearchBarProps) 
       router.push(`/investor/${investorMatch.slug}`);
       return;
     }
-    showError("Try a ticker like AAPL, a fund like Citadel, or an investor name");
+    // For any other text, default to searching as a fund
+    const slug = toSlug(query.trim());
+    if (slug) {
+      setQuery(query.trim());
+      router.push(`/fund/${slug}`);
+      return;
+    }
+    showError("Enter a ticker, fund name, or investor name");
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -256,8 +302,14 @@ export function SearchBar({ size = "default", className = "" }: SearchBarProps) 
                   key={
                     match.kind === "ticker"
                       ? `t-${match.symbol}`
+                      : match.kind === "search-ticker"
+                      ? `st-${match.symbol}`
                       : match.kind === "fund"
                       ? `f-${match.slug}`
+                      : match.kind === "search-fund"
+                      ? `sf-${match.slug}`
+                      : match.kind === "search-investor"
+                      ? `si-${match.slug}`
                       : `i-${match.slug}`
                   }
                   id={`search-option-${i}`}
@@ -282,6 +334,17 @@ export function SearchBar({ size = "default", className = "" }: SearchBarProps) 
                         {match.name}
                       </span>
                     </>
+                  ) : match.kind === "search-ticker" ? (
+                    <>
+                      <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="text-sm text-muted-foreground">Search</span>
+                      <span className="font-mono font-bold text-sm text-amber-600 dark:text-amber-400 shrink-0">
+                        {match.symbol}
+                      </span>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        as ticker
+                      </span>
+                    </>
                   ) : match.kind === "fund" ? (
                     <>
                       <Landmark className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -290,6 +353,28 @@ export function SearchBar({ size = "default", className = "" }: SearchBarProps) 
                       </span>
                       <span className="text-sm text-muted-foreground truncate">
                         Fund
+                      </span>
+                    </>
+                  ) : match.kind === "search-fund" ? (
+                    <>
+                      <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="text-sm text-muted-foreground">Search</span>
+                      <span className="font-semibold text-sm text-blue-600 dark:text-blue-400 truncate">
+                        &ldquo;{match.name}&rdquo;
+                      </span>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        as fund
+                      </span>
+                    </>
+                  ) : match.kind === "search-investor" ? (
+                    <>
+                      <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="text-sm text-muted-foreground">Search</span>
+                      <span className="font-semibold text-sm text-emerald-600 dark:text-emerald-400 truncate">
+                        &ldquo;{match.name}&rdquo;
+                      </span>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        as investor
                       </span>
                     </>
                   ) : (
@@ -308,15 +393,11 @@ export function SearchBar({ size = "default", className = "" }: SearchBarProps) 
             </div>
           )}
 
-          {/* No results */}
+          {/* No results — only shows for single character queries */}
           {isOpen && query.trim().length > 0 && matches.length === 0 && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-xl shadow-lg z-50 px-4 py-3">
               <p className="text-sm text-muted-foreground">
-                No match found. Press Enter to search{" "}
-                <span className="font-mono font-semibold text-foreground">
-                  {query.trim().toUpperCase()}
-                </span>{" "}
-                as a ticker.
+                Type more to search for a ticker, fund, or investor...
               </p>
             </div>
           )}

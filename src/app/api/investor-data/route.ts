@@ -4,6 +4,7 @@ import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { getCached, setCache } from "@/lib/redis";
 import { findInvestorBySlug } from "@/lib/investors";
+import { fromSlug } from "@/lib/slug";
 import { resolveAuth } from "@/lib/auth-utils";
 import { secSearch } from "@/lib/valyu-tools";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
@@ -71,11 +72,12 @@ export async function POST(request: NextRequest) {
     }
 
     const { slug } = parsed.data;
-    const investor = findInvestorBySlug(slug);
 
-    if (!investor) {
-      return NextResponse.json({ error: "Investor not found." }, { status: 404 });
-    }
+    // Try to find the investor in the known list, otherwise derive name from slug
+    const knownInvestor = findInvestorBySlug(slug);
+    const investorName = knownInvestor?.name ?? fromSlug(slug);
+    const investorFund = knownInvestor?.fund ?? "";
+    const investorTitle = knownInvestor?.title ?? "";
 
     // Return cached data if fresh
     const cached = await getCached<InvestorData>(`investor:${slug}`);
@@ -99,8 +101,10 @@ Key rules:
 - For transactions: classify type based on description (buy, sell, exercise, award, gift)
 - buyCount/sellCount only count buy and sell transactions, not exercises, awards, or gifts
 - totalPortfolioValue should be the sum of all position values
-- Set name to "${investor.name}", fund to "${investor.fund}", title to "${investor.title}"`,
-      prompt: `Find all SEC filing data for ${investor.name} (${investor.fund}). Search for their 13F holdings, 13D/G activist positions, and Form 4 insider transactions. I need their top portfolio positions and recent transactions across all their holdings.`,
+- Set name to the investor's full name as found in SEC filings (fall back to "${investorName}")
+- Set fund to the investor's fund/company as found in SEC filings${investorFund ? ` (known: "${investorFund}")` : ""}
+- Set title to the investor's role/title as found in SEC filings${investorTitle ? ` (known: "${investorTitle}")` : ""}`,
+      prompt: `Find all SEC filing data for ${investorName}${investorFund ? ` (${investorFund})` : ""}. Search for their 13F holdings, 13D/G activist positions, and Form 4 insider transactions. I need their top portfolio positions and recent transactions across all their holdings.`,
       tools: {
         secSearch: secSearch({
           apiKey: auth.apiKey,
@@ -119,8 +123,8 @@ Key rules:
       const retry = await generateText({
         model: openai("gpt-5.4-2026-03-05"),
         output: Output.object({ schema: InvestorDataSchema }),
-        system: `Extract this data into the required JSON format. Do NOT call any tools — the data is already provided below. Set name to "${investor.name}", fund to "${investor.fund}", title to "${investor.title}".`,
-        prompt: `Based on the following tool call results, extract the structured data for ${investor.name} (${investor.fund}):\n\n${result.text}`,
+        system: `Extract this data into the required JSON format. Do NOT call any tools — the data is already provided below. Set name to "${investorName}"${investorFund ? `, fund to "${investorFund}"` : ""}${investorTitle ? `, title to "${investorTitle}"` : ""}.`,
+        prompt: `Based on the following tool call results, extract the structured data for ${investorName}${investorFund ? ` (${investorFund})` : ""}:\n\n${result.text}`,
         stopWhen: stepCountIs(1),
       });
       try {

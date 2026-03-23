@@ -4,6 +4,7 @@ import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { getCached, setCache } from "@/lib/redis";
 import { findFundBySlug } from "@/lib/funds";
+import { fromSlug } from "@/lib/slug";
 import { resolveAuth } from "@/lib/auth-utils";
 import { secSearch } from "@/lib/valyu-tools";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
@@ -45,7 +46,7 @@ const FundDataSchema = z.object({
 type FundDataOutput = z.infer<typeof FundDataSchema>;
 
 const RequestSchema = z.object({
-  slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/),
+  slug: z.string().min(1).max(200).regex(/^[a-z0-9-]+$/),
 });
 
 const CACHE_TTL_SECONDS = 6 * 60 * 60; // 6 hours
@@ -69,11 +70,11 @@ export async function POST(request: NextRequest) {
     }
 
     const { slug } = parsed.data;
-    const fund = findFundBySlug(slug);
 
-    if (!fund) {
-      return NextResponse.json({ error: "Fund not found." }, { status: 404 });
-    }
+    // Try to find the fund in the known list, otherwise derive name from slug
+    const knownFund = findFundBySlug(slug);
+    const fundName = knownFund?.name ?? fromSlug(slug);
+    const keyPeople = knownFund?.keyPeople ?? [];
 
     // Return cached data if fresh
     const cached = await getCached<FundData>(`fund:${slug}`);
@@ -96,9 +97,9 @@ Key rules:
 - For transactions: classify type based on description (buy, sell, exercise, award, gift)
 - buyCount/sellCount only count buy and sell transactions, not exercises, awards, or gifts
 - totalPortfolioValue should be the sum of all position values
-- Set name to "${fund.name}"
-- Set keyPeople to ${JSON.stringify(fund.keyPeople)}`,
-      prompt: `Find all SEC filing data for the fund "${fund.name}". Search for their 13F-HR institutional holdings, 13D/G activist positions, and Form 4 insider transactions. I need their top portfolio positions and recent transactions.`,
+- Set name to the official fund name as found in SEC filings (fall back to "${fundName}" if not found)
+- Set keyPeople to key people found in SEC filings${keyPeople.length > 0 ? ` (known: ${JSON.stringify(keyPeople)})` : ""}`,
+      prompt: `Find all SEC filing data for the fund "${fundName}". Search for their 13F-HR institutional holdings, 13D/G activist positions, and Form 4 insider transactions. I need their top portfolio positions and recent transactions.`,
       tools: {
         secSearch: secSearch({
           apiKey: auth.apiKey,
@@ -117,8 +118,8 @@ Key rules:
       const retry = await generateText({
         model: openai("gpt-5.4-2026-03-05"),
         output: Output.object({ schema: FundDataSchema }),
-        system: `Extract this data into the required JSON format. Do NOT call any tools — the data is already provided below. Set name to "${fund.name}". Set keyPeople to ${JSON.stringify(fund.keyPeople)}.`,
-        prompt: `Based on the following tool call results, extract the structured data for "${fund.name}":\n\n${result.text}`,
+        system: `Extract this data into the required JSON format. Do NOT call any tools — the data is already provided below. Set name to the official fund name (fall back to "${fundName}"). Set keyPeople to key people found in the data${keyPeople.length > 0 ? ` (known: ${JSON.stringify(keyPeople)})` : ""}.`,
+        prompt: `Based on the following tool call results, extract the structured data for "${fundName}":\n\n${result.text}`,
         stopWhen: stepCountIs(1),
       });
       try {
