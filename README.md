@@ -87,6 +87,7 @@ NEXT_PUBLIC_APP_MODE=valyu
 - npm
 - Valyu API key (get one at [platform.valyu.ai](https://platform.valyu.ai))
 - OpenAI API key
+<img src="https://files.catbox.moe/n7fq4h.jpg" height="55">
 
 ## Usage
 
